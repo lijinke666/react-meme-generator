@@ -11,7 +11,7 @@ import "./example.less"
 const Demo = () => (
     <LocaleProvider locale={zhCN}>
         <ReactMeme />
-    </LocaleProvider>
+     </LocaleProvider>
 )
 ReactDOM.render(
     <Demo/>,
