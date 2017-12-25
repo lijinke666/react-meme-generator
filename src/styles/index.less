@@ -1,6 +1,45 @@
 @import "./vars.less";
 @import "./mixins.less";
 
-.@{prefix}{
-    
+.react-meme{
+    &-item{
+        padding-bottom: 2%;
+        &-label{
+        }
+        &-input{
+
+        }
+    }
+    .color-section{
+        padding: 5px;
+        background: #fff;
+        border-radius: 1px;
+        box-shadow: 0 0 0 1px rgba(0,0,0,.1);
+        display: inline-block;
+        cursor: pointer;
+        .color{
+            width: 90px;
+            height:22px;
+            border-radius: 2px;
+        }
+    }
+    .popover{
+        position: absolute;
+        left:0;
+        top:41px;
+        z-index: 999;
+        text-align: right;
+    }
+    .cover{
+        position: fixed;
+        top:0;
+        left:0;
+        right:0;
+        bottom:0;
+    }
+    .preview-content{
+        width:300px;
+        height:300px;
+        border:1px solid 
+    }
 }

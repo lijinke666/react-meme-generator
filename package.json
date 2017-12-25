@@ -42,7 +42,8 @@
     "antd": "^3.0.3",
     "classnames": "^2.2.5",
     "prop-types": "^15.6.0",
-    "react": "^16.2.0"
+    "react": "^16.2.0",
+    "react-color": "^2.13.8"
   },
   "devDependencies": {
     "autoprefixer": "^6.7.2",
