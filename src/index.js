@@ -1,30 +1,44 @@
 import React, { PureComponent } from "react"
 import Container from "./components/Container"
-import { Button, Divider, Col, Row, Form, Input, Modal, message, Select,Slider } from "antd"
+import cls from "classnames"
+import { Button, Divider, Col, Row, Form, Input, Modal, message, Select, Slider } from "antd"
 import { SketchPicker } from 'react-color'
-import { fontFamily, defaultFontText,imageProcess,defaultFontSize,fontSize } from "./config"
+import {
+    prefix,
+    fontFamily,
+    defaultFontText,
+    imageProcess,
+    defaultFontSize,
+    fontSize,
+    maxFileSize as IMG_MAX_SIZE
+} from "./config"
+import { isImage } from "./utils"
 
 const { FormItem } = Form
 const { Option } = Select
 const { TextArea } = Input
 
-const prefix = 'react-meme'
-
 class ReactMeme extends PureComponent {
     state = {
         cameraVisible: false,
         displayColorPicker: false,
-        fontColor:"#444",
-        defaultFontSize
+        fontColor: "#444",
+        fontSize:defaultFontSize,
+        text:defaultFontText,
+        font:fontFamily[0].value,
+        loadingImgReady: false,
+        dragAreaClass:false        //拖拽区域active class
     }
+    activeDragAreaClass = "drag-active"
     constructor(props) {
         super(props)
     }
     static defaultProps = {
         defaultFont: fontFamily[0].value,
-        defaultImageProcess:imageProcess[0].value,
+        defaultImageProcess: imageProcess[0].value,
         defaultText: defaultFontText,
-        defaultFontSize
+        defaultFontSize,
+        drag:true
     }
     toggleColorPicker = () => {
         this.setState({ displayColorPicker: !this.state.displayColorPicker })
@@ -73,12 +87,110 @@ class ReactMeme extends PureComponent {
     closeCamera = () => {
         this.setState({ cameraVisible: false })
     }
-    fontSizeChange = (value)=>{
+    fontSizeChange = (value) => {
+        this.setState({fontSize:value})
         console.log(value);
     }
     //截取当前摄像头 帧
     screenShotCamera = () => {
 
+    }
+    onSelectFile = () => {
+        this.file.click()
+    }
+    imageChange = () => {
+        const files = Array.from(this.file.files)
+        this.renderImage(files)
+    }
+    renderImage = (files = []) => {
+        files.forEach((file) => {
+            let { type, name, size } = file
+            if (!isImage(type)) {
+                return message.error('无效的图片格式')
+            }
+            if (~~(size / 1024) >= IMG_MAX_SIZE) {
+                let maxSize = IMG_MAX_SIZE > 1024 ? `${IMG_MAX_SIZE}MB` : `${IMG_MAX_SIZE}KB`
+                return message.warning(`图片最大 ${maxSize}!`)
+            }
+            const reader = new FileReader()
+            reader.onloadstart = () => {
+                this.setState({ loading: true })
+            }
+            reader.onabort = () => {
+                this.setState({
+                    loading: false,
+                    loadingImgReady: false,
+                    currentImg: {}
+                })
+                message.error(`${name}读取中断!`)
+            };
+            reader.onerror = () => {
+                this.setState({
+                    loading: false,
+                    loadingImgReady: false,
+                    currentImg: {}
+                })
+                message.error(`${name}读取失败`)
+            };
+            reader.onload = (e) => {
+                const result = e.target.result        //读取失败时  null   否则就是读取的结果
+                this.setState({
+                    loading: false,
+                    loadingImgReady: true,
+                    currentImg: {
+                        src: result,
+                        size: `${(~~size / 1024)}KB`
+                    }
+                })
+            }
+            reader.readAsDataURL(file)      //base64
+        })
+    }
+    stopAll = (target) => {
+        target.stopPropagation()
+        target.preventDefault()
+    }
+    //绑定拖拽事件
+    addDragListener = (dragArea, dragAreaClass = true) => {
+        document.addEventListener('dragenter', (e) => {
+            this.addDragAreaStyle();
+        }, false);
+        document.addEventListener('dragleave', (e) => {
+            this.removeDragAreaStyle();
+        }, false);
+        //进入
+        dragArea.addEventListener('dragenter', (e) => {
+            this.stopAll(e)
+            this.addDragAreaStyle();
+        }, false);
+        //离开
+        dragArea.addEventListener('dragleave', (e) => {
+            this.stopAll(e)
+            this.removeDragAreaStyle()
+        }, false);
+        //移动
+        dragArea.addEventListener('dragover', (e) => {
+            this.stopAll(e)
+            this.addDragAreaStyle()
+        }, false);
+        dragArea.addEventListener('drop', (e) => {
+            this.stopAll(e)
+            this.removeDragAreaStyle()
+            const files = (e.dataTransfer || e.originalEvent.dataTransfer).files
+            this.renderImage(Array.from(files))
+        }, false)
+    }
+    addDragAreaStyle = () => {
+        this.setState({ dragAreaClass: true })
+    }
+    removeDragAreaStyle = () => {
+        this.setState({ dragAreaClass: false })
+    }
+    textChnage = (e)=>{
+        this.setState({text:e.target.value})
+    }
+    fontFamilyChange = (value)=>{
+        this.setState({font:value})
     }
     render() {
         const { getFieldDecorator } = this.props.form
@@ -94,7 +206,14 @@ class ReactMeme extends PureComponent {
             cameraVisible,
             cameraUrl,
             fontColor,
-            displayColorPicker
+            fontSize,
+            font,
+            text,
+            displayColorPicker,
+            loading,
+            loadingImgReady,
+            currentImg,
+            dragAreaClass
         } = this.state
 
         const {
@@ -108,7 +227,7 @@ class ReactMeme extends PureComponent {
         const valueSpan = 19
         const offsetSpan = 1
 
-        const operationRow = ({ icon = "edit" ,label, component }) => (
+        const operationRow = ({ icon = "edit", label, component }) => (
             <Row className={`${prefix}-item`}>
                 <Col span={labelSpan} className={`${prefix}-item-label`}><Button type="primary" icon={icon}>{label}</Button></Col>
                 <Col span={valueSpan} offset={offsetSpan} className={`${prefix}-item-input`}>{component}</Col>
@@ -118,13 +237,30 @@ class ReactMeme extends PureComponent {
         return (
             <Container className={prefix}>
                 <Divider><h2 className="title">{prefix}</h2></Divider>
-                <section className={`${prefix}-main`}>
+                <section className={`${prefix}-main`} ref={ previewArea => this.previewArea = previewArea}>
                     <Row>
                         <Col span="8">
-                            <div className="preview-content">
-                                
+                            <div 
+                                className={cls("preview-content",{
+                                    [this.activeDragAreaClass]:dragAreaClass
+                                })}
+                            >
+                                {
+                                    loadingImgReady
+                                        ? <img src={currentImg.src} style={{ width: "100%" }} />
+                                        : undefined
+                                }
+                                <div className={`${prefix}-text`} style={{
+                                   color:fontColor,
+                                   fontSize, 
+                                   fontFamily:font
+                                }}>{text}</div>
                             </div>
-                            <Button type="primary">选择图片</Button>
+                            <Row>
+                                <input type="file" className="hidden" accept="image/*" ref={node => this.file = node} onChange={this.imageChange} />
+                                <Col span={4}><Button type="primary" loading={loading} onClick={this.onSelectFile}>{loading ? "请稍后" : "选择图片"}</Button></Col>
+                                <Col span={4} offset={2}><Button type="primary" onClick={this.openCamera}>使用摄像头</Button></Col>
+                            </Row>
                         </Col>
                         <Col span="16">
                             {
@@ -133,17 +269,18 @@ class ReactMeme extends PureComponent {
                                     component: (
                                         <TextArea
                                             autosize={true}
-                                            defaultValue={defaultText}
+                                            value={text}
+                                            onChange={this.textChnage}
                                         />
                                     )
                                 })
                             }
                             {
                                 operationRow({
-                                    icon:"file-ppt",
+                                    icon: "file-ppt",
                                     label: '字体',
                                     component: (
-                                        <Select style={{ width: "100%" }} defaultValue={defaultFont}>
+                                        <Select style={{ width: "100%" }} defaultValue={defaultFont} onChange={this.fontFamilyChange}>
                                             {
                                                 fontFamily.map(({ label, value }, i) => (
                                                     <Option value={value} key={i}>{label}</Option>
@@ -155,28 +292,28 @@ class ReactMeme extends PureComponent {
                             }
                             {
                                 operationRow({
-                                    icon:"pie-chart",
+                                    icon: "pie-chart",
                                     label: '颜色',
                                     component: (
                                         <div>
                                             <div className="color-section" onClick={this.toggleColorPicker}>
-                                                <div 
-                                                    className="color" 
+                                                <div
+                                                    className="color"
                                                     style={{
-                                                    background:fontColor
+                                                        background: fontColor
                                                     }}
                                                 />
                                             </div>
                                             {
-                                                displayColorPicker 
-                                                ? <div className="popover">
-                                                    <div className="cover" onClick={this.closeColorPircker} />
-                                                    <SketchPicker 
-                                                        color={fontColor} 
-                                                        onChange={this.colorChange} 
-                                                    />
-                                                </div> 
-                                                : undefined
+                                                displayColorPicker
+                                                    ? <div className="popover">
+                                                        <div className="cover" onClick={this.closeColorPircker} />
+                                                        <SketchPicker
+                                                            color={fontColor}
+                                                            onChange={this.colorChange}
+                                                        />
+                                                    </div>
+                                                    : undefined
 
                                             }
                                         </div>
@@ -185,7 +322,7 @@ class ReactMeme extends PureComponent {
                             }
                             {
                                 operationRow({
-                                    icon:"picture",
+                                    icon: "picture",
                                     label: '图片处理',
                                     component: (
                                         <Select style={{ width: "100%" }} defaultValue={defaultImageProcess}>
@@ -200,21 +337,18 @@ class ReactMeme extends PureComponent {
                             }
                             {
                                 operationRow({
-                                    icon:"line-chart",
+                                    icon: "line-chart",
                                     label: '文字大小',
                                     component: (
-                                        <Slider 
+                                        <Slider
                                             min={fontSize[0]}
-                                            max={fontSize[fontSize.length-1]}
-                                            defaultValue={defaultFontSize} 
+                                            max={fontSize[fontSize.length - 1]}
+                                            defaultValue={defaultFontSize}
                                             onAfterChange={this.fontSizeChange}
                                         />
                                     )
                                 })
                             }
-                            <Row>
-                                <Col offset={5}><Button type="primary" onClick={this.openCamera}>使用摄像头</Button></Col>
-                            </Row>
                         </Col>
                     </Row>
                 </section>
@@ -235,10 +369,12 @@ class ReactMeme extends PureComponent {
         )
     }
     componentDidMount() {
-        Modal.info({
-            title:"开发中...",
-            content:"敬请期待"
-        })
+        // Modal.info({
+        //     title: "开发中...",
+        //     content: "敬请期待"
+        // })
+        const {drag} = this.props
+        drag && this.addDragListener(this.previewArea)
     }
 }
 

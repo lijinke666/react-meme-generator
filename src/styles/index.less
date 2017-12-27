@@ -40,6 +40,20 @@
     .preview-content{
         width:300px;
         height:300px;
-        border:1px solid 
+        border:1px solid @border-color;
+        overflow: hidden;
+        margin-bottom:20px;
+        position: relative;
+        &.drag-active{
+            border:2px dashed @border-color;
+            background-color: rgba(0,0,0,.1)
+        }
+    }
+    &-text{
+        position: absolute;
+        left:0;
+        top:0;
+        cursor: move;
+        z-index: 99;
     }
 }

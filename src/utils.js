@@ -1,0 +1,1 @@
+export const isImage = (filename)=> /.*\/(jpg|jpeg|png)$/.test(filename) 

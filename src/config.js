@@ -1,3 +1,4 @@
+export const prefix = "react-meme"
 export const fontFamily = [
     {
         label: "微软雅黑",
@@ -29,3 +30,5 @@ export const fontSize = Array.from({ length: 60 }).map((_, i) => i+1).filter(v =
 export const defaultFontSize = fontSize[0]
 
 export const defaultFontText = "测试默认文字"
+
+export const img_max_size = 10
