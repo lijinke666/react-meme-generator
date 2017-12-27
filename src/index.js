@@ -483,10 +483,10 @@ class ReactMeme extends PureComponent {
         )
     }
     componentDidMount() {
-        // Modal.info({
-        //     title: "开发中...",
-        //     content: "敬请期待"
-        // })
+        Modal.info({
+            title: "开发中...",
+            content: "敬请期待"
+        })
         const { drag } = this.props
         drag && this.addDragListener(this.previewArea)
     }
