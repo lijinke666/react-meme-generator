@@ -43,7 +43,8 @@
     "classnames": "^2.2.5",
     "prop-types": "^15.6.0",
     "react": "^16.2.0",
-    "react-color": "^2.13.8"
+    "react-color": "^2.13.8",
+    "react-draggable": "^3.0.4"
   },
   "devDependencies": {
     "autoprefixer": "^6.7.2",

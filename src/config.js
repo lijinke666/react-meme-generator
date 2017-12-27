@@ -7,6 +7,9 @@ export const fontFamily = [
     {
         label: "海维提卡",
         value: "Helvetica"
+    },{
+        label:"草书",
+        value:"cursive"
     }
 ]
 
@@ -28,6 +31,8 @@ export const imageProcess = [
 export const fontSize = Array.from({ length: 60 }).map((_, i) => i+1).filter(v => v > 15)
 
 export const defaultFontSize = fontSize[0]
+
+export const defaultFontColor = "#444"
 
 export const defaultFontText = "测试默认文字"
 
