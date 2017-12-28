@@ -30,10 +30,19 @@ export const imageProcess = [
 
 export const fontSize = Array.from({ length: 60 }).map((_, i) => i+1).filter(v => v > 15)
 
-export const defaultFontSize = fontSize[0]
+export const defaultFontSize = fontSize[4]
 
 export const defaultFontColor = "#444"
 
-export const defaultFontText = "测试默认文字"
+export const defaultFontText = "写点什么"
 
-export const img_max_size = 10
+export const img_max_size = 1024
+
+export const range = 0.05           //每次缩放的值
+
+export const maxScale = 3.0         //最大缩放
+
+export const previewContentStyle = {
+    width:300,
+    height:300
+}

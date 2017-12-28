@@ -1,3 +1,11 @@
+/**
+ * @name react 表情包 制作器
+ * @author jinke.li
+ * TODO
+ * 文字 高度 计算
+ * 预览区域支持 粘贴图片
+ * 完成 摄像头捕捉
+ */
 import React, { PureComponent } from "react"
 import Container from "./components/Container"
 import cls from "classnames"
@@ -12,7 +20,10 @@ import {
     imageProcess,
     defaultFontSize,
     fontSize,
-    maxFileSize as IMG_MAX_SIZE
+    maxFileSize as IMG_MAX_SIZE,
+    previewContentStyle,
+    range,
+    maxScale
 } from "./config"
 import { isImage } from "./utils"
 
@@ -32,8 +43,11 @@ class ReactMeme extends PureComponent {
         dragAreaClass: false,        //拖拽区域active class
         textDragX: 0,
         textDragY: 0,
+        imageDragX: 0,
+        imageDragY: 0,
         isRotateText: false,
-        rotate: 0
+        rotate: 0,          //旋转角度
+        scale: 1.0           //缩放比例
     }
     activeDragAreaClass = "drag-active"
     constructor(props) {
@@ -62,50 +76,114 @@ class ReactMeme extends PureComponent {
             font,
             rotate,
             text,
+            scale,
             textDragX,
             textDragY,
+            imageDragX,
+            imageDragY,
             currentImg: {
                 src,
                 type
             }
         } = this.state
 
-        console.log(rotate)
+        console.log(textDragX, textDragY);
 
         const canvas = document.createElement('canvas')
         const ctx = canvas.getContext('2d')
+        canvas.width = previewContentStyle.width
+        canvas.height = previewContentStyle.height
+
+        const imgOffset = this.previewImage.getBoundingClientRect()
+        const clipOffset = this.previewContent.getBoundingClientRect()
+
+        const sx = ~~(clipOffset.left - imgOffset.left)
+        const sy = ~~(clipOffset.top - imgOffset.top)
         return new Promise((res, rej) => {
             const image = new Image()
             image.src = src
             image.onload = () => {
-                //TODO
-                canvas.width = image.width
-                canvas.height = image.height
-
                 ctx.save()
-
-                ctx.drawImage(image, 0, 0)
                 ctx.rotate(rotate * Math.PI / 180)
+                ctx.drawImage(
+                    image,
+                    sx / scale,
+                    sy / scale,
+                    previewContentStyle.width / scale,
+                    previewContentStyle.height / scale,
+                    0, 0,
+                    previewContentStyle.width,
+                    previewContentStyle.height
+                )
+                if (!!text) {
+                    const textCanvas = this.drawTextWaterMark(
+                        textDragX,
+                        textDragY
+                    )
+                    ctx.drawImage(textCanvas, textDragX, textDragY)
+                }
                 ctx.restore()
-
-                console.log(type)
-
-                res(canvas.toDataURL(type))
+                const result = canvas.toDataURL("image/png")
+                res(result)
             }
             image.onerror = (err) => rej(err)
         })
 
     }
+    //绘制文字水印
+    drawTextWaterMark = (fillX, fillY) => {
+        const {
+            fontSize,
+            fontColor,
+            font,
+            text
+        } = this.state
+
+        const textCanvas = document.createElement('canvas')
+        const waterMarkCtx = textCanvas.getContext('2d')
+        const { width: textWidth } = waterMarkCtx.measureText(text)  //文字宽度
+
+        waterMarkCtx.font = `${fontSize}px ${font}`
+        waterMarkCtx.fillStyle = fontColor
+        waterMarkCtx.textBaseline = "middle"
+        //TODO getImageData 算出有颜色区域的 宽高 目前 高度无法计算
+        waterMarkCtx.fillText(text, fillX - textWidth, fillY)
+
+        return textCanvas
+
+    }
+    bindMouseWheel = (e) => {
+        const y = e.deltaY ? e.deltaY : e.wheelDeltaY    //火狐有特殊
+        this.setState(({ scale }) => {
+            if (y > 0) {
+                return {
+                    scale: scale -= range
+                }
+            } else {
+                return {
+                    scale: scale += range
+                }
+            }
+        })
+        return false
+    }
     createMeme = (e) => {
+        if (!this.state.loadingImgReady) return message.error('请选择图片!')
         this.drawMeme().then((meme) => {
-            console.log(meme);
             Modal.confirm({
                 title: "确认生成吗?",
                 content: (
-                    <img src={meme} style={{ "width": "100%" }} />
+                    <img src={meme} style={{ "maxWidth": "100%" }} />
                 ),
                 onOk: () => {
-                    message.info('待完成!')
+                    const blob = new Blob(["\ufeff"+meme],{
+                        type:"image/png"
+                    })
+                    const url = URL.createObjectURL(blob)
+                    const link = document.createElement('a')
+                    link.setAttribute('href',url)
+                    link.setAttribute('download',Date.now())
+                    link.click()
                 }
             })
         })
@@ -165,39 +243,50 @@ class ReactMeme extends PureComponent {
                 let maxSize = IMG_MAX_SIZE > 1024 ? `${IMG_MAX_SIZE}MB` : `${IMG_MAX_SIZE}KB`
                 return message.warning(`图片最大 ${maxSize}!`)
             }
-            const reader = new FileReader()
-            reader.onloadstart = () => {
-                this.setState({ loading: true })
-            }
-            reader.onabort = () => {
-                this.setState({
-                    loading: false,
-                    loadingImgReady: false,
-                    currentImg: {}
-                })
-                message.error(`${name}读取中断!`)
-            };
-            reader.onerror = () => {
-                this.setState({
-                    loading: false,
-                    loadingImgReady: false,
-                    currentImg: {}
-                })
-                message.error(`${name}读取失败`)
-            };
-            reader.onload = (e) => {
-                const result = e.target.result        //读取失败时  null   否则就是读取的结果
-                this.setState({
-                    loading: false,
-                    loadingImgReady: true,
-                    currentImg: {
-                        src: result,
-                        size: `${(~~size / 1024)}KB`,
-                        type
-                    }
-                })
-            }
-            reader.readAsDataURL(file)      //base64
+            this.setState({ loading: true })
+            // const reader = new FileReader()
+            // reader.onloadstart = () => {
+            //     this.setState({ loading: true })
+            // }
+            // reader.onabort = () => {
+            //     this.setState({
+            //         loading: false,
+            //         loadingImgReady: false,
+            //         currentImg: {}
+            //     })
+            //     message.error(`${name}读取中断!`)
+            // };
+            // reader.onerror = () => {
+            //     this.setState({
+            //         loading: false,
+            //         loadingImgReady: false,
+            //         currentImg: {}
+            //     })
+            //     message.error(`${name}读取失败`)
+            // };
+            // reader.onload = (e) => {
+            //     const result = e.target.result        //读取失败时  null   否则就是读取的结果
+            //     this.setState({
+            //         loading: false,
+            //         loadingImgReady: true,
+            //         currentImg: {
+            //             src: result,
+            //             size: `${~~(size / 1024)}KB`,
+            //             type
+            //         }
+            //     })
+            // }
+            // reader.readAsBinaryString(file)      //二进制
+            const url = window.URL.createObjectURL(file)
+            this.setState({
+                currentImg: {
+                    src: url,
+                    size: `${~~(size / 1024)}KB`,
+                    type
+                },
+                loading:false,
+                loadingImgReady: true,
+            })
         })
     }
     stopAll = (target) => {
@@ -252,6 +341,12 @@ class ReactMeme extends PureComponent {
             textDragY: y
         })
     }
+    stopDragImage = (e, { x, y}) => {
+        this.setState({
+            imageDragX: x,
+            imageDragY: y
+        })
+    }
     rotateImage = (value) => {
         this.setState({ rotate: value })
     }
@@ -284,8 +379,11 @@ class ReactMeme extends PureComponent {
             dragAreaClass,
             textDragX,
             textDragY,
+            imageDragX,
+            imageDragY,
             isRotateText,
-            rotate
+            rotate,
+            scale
         } = this.state
 
         const {
@@ -301,13 +399,13 @@ class ReactMeme extends PureComponent {
 
         const operationRow = ({ icon = "edit", label, component }) => (
             <Row className={`${prefix}-item`}>
-                <Col span={labelSpan} className={`${prefix}-item-label`}><Button type="primary" icon={icon}>{label}</Button></Col>
+                <Col span={labelSpan} className={`${prefix}-item-label`}><Button type="dashed" icon={icon}>{label}</Button></Col>
                 <Col span={valueSpan} offset={offsetSpan} className={`${prefix}-item-input`}>{component}</Col>
             </Row>
         )
 
-        const rotateConfig = {
-            transform: `rotate(${rotate}deg)`
+        const imageTransFormConfig = {
+            transform: `rotate(${rotate}deg) scale(${scale})`
         }
 
         return (
@@ -317,14 +415,29 @@ class ReactMeme extends PureComponent {
                     <Row>
                         <Col span="8">
                             <div
+                                ref={node => this.previewContent = node}
                                 className={cls("preview-content", {
                                     [this.activeDragAreaClass]: dragAreaClass
                                 })}
-                                style={isRotateText ? rotateConfig : {}}
+                                onWheel={this.bindMouseWheel}
+                                style={isRotateText ? imageTransFormConfig : {}}
                             >
                                 {
                                     loadingImgReady
-                                        ? <img src={currentImg.src} style={{ width: "100%", ...(isRotateText ? {} : rotateConfig) }} />
+                                        ?
+                                        <Draggable
+                                            onStop={this.stopDragImage}
+                                            defaultPosition={{ x: 0, y: 0 }}
+                                        >
+                                            <div>
+                                                <img
+                                                    className="preview-image"
+                                                    ref={node => this.previewImage = node}
+                                                    src={currentImg.src}
+                                                    style={loadingImgReady ? imageTransFormConfig : {}}
+                                                />
+                                            </div>
+                                        </Draggable>
                                         : undefined
                                 }
                                 <Draggable
@@ -453,8 +566,8 @@ class ReactMeme extends PureComponent {
                                                     disabled={!loadingImgReady}
                                                 />
                                             </Col>
-                                            <Col span={4} offset={1}>
-                                                <Checkbox value={isRotateText} disabled={!loadingImgReady} onChange={this.toggleRotateStatus}>旋转文字</Checkbox></Col>
+                                            {/* <Col span={4} offset={1}>
+                                            <Checkbox value={isRotateText} disabled={!loadingImgReady} onChange={this.toggleRotateStatus}>旋转文字</Checkbox></Col> */}
                                         </Row>
 
                                     )
@@ -483,10 +596,6 @@ class ReactMeme extends PureComponent {
         )
     }
     componentDidMount() {
-        Modal.info({
-            title: "开发中...",
-            content: "敬请期待"
-        })
         const { drag } = this.props
         drag && this.addDragListener(this.previewArea)
     }

@@ -45,9 +45,18 @@
         margin-bottom:20px;
         position: relative;
         transform: translate3d(0,0,0);
+        transition: .3s cubic-bezier(0.075, 0.82, 0.165, 1);
+        &:hover{
+            box-shadow: @shadow;
+            border-color: rgba(0, 0, 0, 0.09);
+        }
         &.drag-active{
             border:2px dashed @border-color;
             background-color: rgba(0,0,0,.1)
+        }
+        .preview-image{
+            user-select: none;
+            cursor: move;
         }
     }
     &-text{
