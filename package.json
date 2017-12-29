@@ -7,13 +7,8 @@
     "start": "npm run demo",
     "test": "jest",
     "clean": "rimraf lib && rimraf assets",
-    "auto": "postcss -u autoprefixer -c postcss.config.json --no-map -o assets/index.css  assets/index.css",
-    "buildcss": "lessc src/index.less assets/index.css && npm run auto",
-    "buildjs": "babel src -d lib",
-    "pub": "npm run clean && npm run buildjs && npm run buildcss && npm run buildcss",
     "build-demo": "webpack --env.mode=PROD --progress --config  ./example/webpack.config.js",
-    "demo": "webpack-dev-server --progress --inline --hot --config  ./example/webpack.config.js",
-    "prepublish": "npm run pub"
+    "demo": "webpack-dev-server --progress --inline --hot --config  ./example/webpack.config.js"
   },
   "pre-commit": [
     "build-demo"
