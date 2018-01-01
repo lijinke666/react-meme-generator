@@ -9,7 +9,7 @@
 import React, { PureComponent } from "react"
 import Container from "./components/Container"
 import cls from "classnames"
-import { Button, Divider, Col, Row, Form, Input, Checkbox, Modal, message, Select, Slider } from "antd"
+import { Button, Divider, Col, Row, Form, Input, Checkbox, Modal, message, Select, Slider, Tooltip } from "antd"
 import { SketchPicker } from 'react-color'
 import Draggable from "react-draggable"
 import {
@@ -23,7 +23,8 @@ import {
     maxFileSize as IMG_MAX_SIZE,
     previewContentStyle,
     range,
-    maxScale
+    whellScaleRange,
+    defaultScale,
 } from "./config"
 import { isImage } from "./utils"
 
@@ -47,7 +48,7 @@ class ReactMeme extends PureComponent {
         imageDragY: 0,
         isRotateText: false,
         rotate: 0,          //旋转角度
-        scale: 1.0           //缩放比例
+        scale: defaultScale           //缩放比例
     }
     activeDragAreaClass = "drag-active"
     constructor(props) {
@@ -150,20 +151,37 @@ class ReactMeme extends PureComponent {
         waterMarkCtx.fillText(text, fillX - textWidth, fillY)
 
         return textCanvas
-
+    }
+    closeImageWhellTip = () => {
+        this.setState({ imageWhellTipVisible: false })
+    }
+    resizeImageScale = () => {
+        const { scale } = this.state
+        if (scale != defaultScale) {
+            this.setState({ scale: defaultScale })
+        }
     }
     bindMouseWheel = (e) => {
         const y = e.deltaY ? e.deltaY : e.wheelDeltaY    //火狐有特殊
+        const [min, max] = whellScaleRange
         this.setState(({ scale }) => {
+            let _scale = scale
             if (y > 0) {
+                _scale -= range
+                _scale = Math.max(min, _scale)
                 return {
-                    scale: scale -= range
+                    scale:_scale,
+                    imageWhellTipVisible: true
                 }
             } else {
+                _scale += range
+                _scale = Math.min(max, _scale)
                 return {
-                    scale: scale += range
+                    scale: _scale,
+                    imageWhellTipVisible: true
                 }
             }
+
         })
         return false
     }
@@ -176,13 +194,14 @@ class ReactMeme extends PureComponent {
                     <img src={meme} style={{ "maxWidth": "100%" }} />
                 ),
                 onOk: () => {
-                    const blob = new Blob(["\ufeff"+meme],{
-                        type:"image/png"
+                    //TODO 这种方式生成图片 不行 :(
+                    const blob = new Blob(["\ufeff" + meme], {
+                        type: "image/png"
                     })
                     const url = URL.createObjectURL(blob)
                     const link = document.createElement('a')
-                    link.setAttribute('href',url)
-                    link.setAttribute('download',Date.now())
+                    link.setAttribute('href', url)
+                    link.setAttribute('download', Date.now())
                     link.click()
                 }
             })
@@ -284,7 +303,8 @@ class ReactMeme extends PureComponent {
                     size: `${~~(size / 1024)}KB`,
                     type
                 },
-                loading:false,
+                scale: defaultScale,
+                loading: false,
                 loadingImgReady: true,
             })
         })
@@ -341,7 +361,7 @@ class ReactMeme extends PureComponent {
             textDragY: y
         })
     }
-    stopDragImage = (e, { x, y}) => {
+    stopDragImage = (e, { x, y }) => {
         this.setState({
             imageDragX: x,
             imageDragY: y
@@ -383,8 +403,11 @@ class ReactMeme extends PureComponent {
             imageDragY,
             isRotateText,
             rotate,
-            scale
+            scale,
+            imageWhellTipVisible
         } = this.state
+
+        const _scale = (scale).toFixed(2)
 
         const {
             defaultFont,
@@ -405,7 +428,7 @@ class ReactMeme extends PureComponent {
         )
 
         const imageTransFormConfig = {
-            transform: `rotate(${rotate}deg) scale(${scale})`
+            transform: `rotate(${rotate}deg) scale(${_scale})`
         }
 
         return (
@@ -414,48 +437,69 @@ class ReactMeme extends PureComponent {
                 <section className={`${prefix}-main`} ref={previewArea => this.previewArea = previewArea}>
                     <Row>
                         <Col span="8">
-                            <div
-                                ref={node => this.previewContent = node}
-                                className={cls("preview-content", {
-                                    [this.activeDragAreaClass]: dragAreaClass
-                                })}
-                                onWheel={this.bindMouseWheel}
-                                style={isRotateText ? imageTransFormConfig : {}}
-                            >
-                                {
-                                    loadingImgReady
-                                        ?
-                                        <Draggable
-                                            onStop={this.stopDragImage}
-                                            defaultPosition={{ x: 0, y: 0 }}
-                                        >
-                                            <div>
-                                                <img
-                                                    className="preview-image"
-                                                    ref={node => this.previewImage = node}
-                                                    src={currentImg.src}
-                                                    style={loadingImgReady ? imageTransFormConfig : {}}
-                                                />
-                                            </div>
-                                        </Draggable>
-                                        : undefined
+                            <Tooltip
+                                placement="top"
+                                title={[
+                                    <span className="tip-text" key="tip-text">缩放比例: {_scale}</span>,
+                                    <Button key="resize-btn" className={`${prefix}-resize-btn`} size="small" onClick={this.resizeImageScale}>还原</Button>
+                                ]
                                 }
-                                <Draggable
-                                    bounds="parent"
-                                    onStop={this.stopDragText}
-                                    defaultPosition={{ x: 0, y: 0 }}
+                                visible={imageWhellTipVisible}
+
+                            >
+                                <div
+                                    ref={node => this.previewContent = node}
+                                    className={cls("preview-content", {
+                                        [this.activeDragAreaClass]: dragAreaClass
+                                    })}
+                                    onWheel={this.bindMouseWheel}
+                                    onMouseLeave={this.closeImageWhellTip}
+                                    style={isRotateText ? imageTransFormConfig : {}}
                                 >
-                                    <div className={`${prefix}-text`}
-                                        style={{
-                                            color: fontColor,
-                                            fontSize,
-                                            fontFamily: font
-                                        }}
+                                    {
+                                        loadingImgReady
+                                            ?
+
+                                            <Draggable
+                                                onStop={this.stopDragImage}
+                                                defaultPosition={{ x: 0, y: 0 }}
+                                            >
+                                                <div>
+                                                    <img
+                                                        className="preview-image"
+                                                        ref={node => this.previewImage = node}
+                                                        src={currentImg.src}
+                                                        style={loadingImgReady ? imageTransFormConfig : {}}
+                                                    />
+
+                                                </div>
+                                            </Draggable>
+                                            : undefined
+                                    }
+                                    <Draggable
+                                        bounds="parent"
+                                        onStop={this.stopDragText}
+                                        defaultPosition={{ x: 0, y: 0 }}
                                     >
-                                        {text}
-                                    </div>
-                                </Draggable>
-                            </div>
+                                        <div className={`${prefix}-text`}
+                                            style={{
+                                                color: fontColor,
+                                                fontSize,
+                                                fontFamily: font
+                                            }}
+                                        >
+                                            {/*<Tooltip 
+                                        placement="right" 
+                                        title="文字可以自由拖动"
+                                      
+                                    >*/}
+                                            {text}
+                                            {/*</Tooltip>*/}
+                                        </div>
+                                    </Draggable>
+                                </div>
+                            </Tooltip>
+
                             <Row>
                                 <input type="file" className="hidden" accept="image/*" ref={node => this.file = node} onChange={this.imageChange} />
                                 <Col span={4}><Button type="primary" loading={loading} onClick={this.onSelectFile}>{loading ? "请稍后" : "选择图片"}</Button></Col>

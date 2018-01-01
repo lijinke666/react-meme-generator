@@ -40,7 +40,11 @@ export const img_max_size = 1024
 
 export const range = 0.05           //每次缩放的值
 
-export const maxScale = 3.0         //最大缩放
+// export const maxScale = 3.0         //最大缩放
+
+export const whellScaleRange = [0.4,3.0]
+
+export const defaultScale = 1.0
 
 export const previewContentStyle = {
     width:300,
