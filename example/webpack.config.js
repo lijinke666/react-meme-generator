@@ -8,7 +8,16 @@ const PORT = 8081
 module.exports = (env) => {
     const mode = (env && env.mode) || "DEV"
     const options = {
-        entry: path.join(__dirname, '../example/example.js'),
+        entry:
+            mode === "DEV"
+                ? [
+                    "react-hot-loader/patch",        //热更新
+                    `webpack-dev-server/client?http://${HOST}:${PORT}`,
+                    "webpack/hot/only-dev-server",
+                    path.join(__dirname, '../example/example.js'),
+                ]
+                : path.join(__dirname, '../example/example.js'),
+
         output: {
             path: path.join(__dirname, "../example/dist"),
             filename: "build.js"

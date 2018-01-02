@@ -145,11 +145,12 @@ class ReactMeme extends PureComponent {
 
         const textCanvas = document.createElement('canvas')
         const waterMarkCtx = textCanvas.getContext('2d')
+        textCanvas.width = previewContentStyle.width
+        textCanvas.height = previewContentStyle.height
         const { width: textWidth } = waterMarkCtx.measureText(text)  //文字宽度
 
         waterMarkCtx.font = `${fontSize}px ${font}`
         waterMarkCtx.fillStyle = fontColor
-        waterMarkCtx.textBaseline = "middle"
         //TODO getImageData 算出有颜色区域的 宽高 目前 高度无法计算
         waterMarkCtx.fillText(text, fillX - textWidth, fillY)
 
@@ -168,7 +169,7 @@ class ReactMeme extends PureComponent {
     bindTextWheel = (e) => {
         e.stopPropagation()
         const y = e.deltaY ? e.deltaY : e.wheelDeltaY    //火狐有特殊
-        const [min,max] = textWhellScaleRange
+        const [min, max] = textWhellScaleRange
         this.setState(({ fontSize }) => {
             let _fontSize = fontSize
             if (y > 0) {
@@ -376,7 +377,7 @@ class ReactMeme extends PureComponent {
     removeDragAreaStyle = () => {
         this.setState({ dragAreaClass: false })
     }
-    textChnage = (e) => {
+    onTextChange = (e) => {
         this.setState({ text: e.target.value })
     }
     fontFamilyChange = (value) => {
@@ -401,6 +402,10 @@ class ReactMeme extends PureComponent {
         this.setState({
             isRotateText: e.target.checked
         })
+    }
+    //文字换行
+    textPressEnter = ()=>{
+        console.log(this.state.text);
     }
     render() {
         const { getFieldDecorator } = this.props.form
@@ -514,7 +519,7 @@ class ReactMeme extends PureComponent {
                                         onStop={this.stopDragText}
                                         defaultPosition={{ x: 0, y: 0 }}
                                     >
-                                        <div
+                                        <pre
                                             className={`${prefix}-text`}
                                             style={{
                                                 color: fontColor,
@@ -530,7 +535,7 @@ class ReactMeme extends PureComponent {
                                     >*/}
                                             {text}
                                             {/*</Tooltip>*/}
-                                        </div>
+                                        </pre>
                                     </Draggable>
                                 </div>
                             </Tooltip>
@@ -549,7 +554,9 @@ class ReactMeme extends PureComponent {
                                         <TextArea
                                             autosize={true}
                                             value={text}
-                                            onChange={this.textChnage}
+                                            placeholder="请输入文字"
+                                            onChange={this.onTextChange}
+                                            onPressEnter={this.textPressEnter}
                                         />
                                     )
                                 })
@@ -635,21 +642,14 @@ class ReactMeme extends PureComponent {
                                     icon: "line-chart",
                                     label: '图像旋转',
                                     component: (
-                                        <Row>
-                                            <Col span={19}>
-                                                <Slider
-                                                    min={0}
-                                                    max={360}
-                                                    defaultValue={0}
-                                                    tipFormatter={(value) => `${value}°`}
-                                                    onChange={this.rotateImage}
-                                                    disabled={!loadingImgReady}
-                                                />
-                                            </Col>
-                                            {/* <Col span={4} offset={1}>
-                                            <Checkbox value={isRotateText} disabled={!loadingImgReady} onChange={this.toggleRotateStatus}>旋转文字</Checkbox></Col> */}
-                                        </Row>
-
+                                        <Slider
+                                            min={0}
+                                            max={360}
+                                            defaultValue={0}
+                                            tipFormatter={(value) => `${value}°`}
+                                            onChange={this.rotateImage}
+                                            disabled={!loadingImgReady}
+                                        />
                                     )
                                 })
                             }
