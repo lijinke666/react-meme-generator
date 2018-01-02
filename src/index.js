@@ -19,13 +19,16 @@ import {
     defaultFontColor,
     imageProcess,
     defaultFontSize,
-    fontSize,
+    fontSize as FONT_SIZE,
     maxFileSize as IMG_MAX_SIZE,
     previewContentStyle,
     range,
+    textRange,
     whellScaleRange,
+    textWhellScaleRange,
     defaultScale,
 } from "./config"
+
 import { isImage } from "./utils"
 
 const { FormItem } = Form
@@ -161,7 +164,31 @@ class ReactMeme extends PureComponent {
             this.setState({ scale: defaultScale })
         }
     }
-    bindMouseWheel = (e) => {
+    //文字鼠标滚轮缩放
+    bindTextWheel = (e) => {
+        e.stopPropagation()
+        const y = e.deltaY ? e.deltaY : e.wheelDeltaY    //火狐有特殊
+        const [min,max] = textWhellScaleRange
+        this.setState(({ fontSize }) => {
+            let _fontSize = fontSize
+            if (y > 0) {
+                _fontSize -= textRange
+                _fontSize = Math.max(min, _fontSize)
+                return {
+                    fontSize: _fontSize,
+                }
+            } else {
+                _fontSize += textRange
+                _fontSize = Math.min(max, _fontSize)
+                return {
+                    fontSize: _fontSize
+                }
+            }
+        })
+        return false
+    }
+    //图片鼠标滚轮缩放
+    bindImageMouseWheel = (e) => {
         const y = e.deltaY ? e.deltaY : e.wheelDeltaY    //火狐有特殊
         const [min, max] = whellScaleRange
         this.setState(({ scale }) => {
@@ -170,7 +197,7 @@ class ReactMeme extends PureComponent {
                 _scale -= range
                 _scale = Math.max(min, _scale)
                 return {
-                    scale:_scale,
+                    scale: _scale,
                     imageWhellTipVisible: true
                 }
             } else {
@@ -207,6 +234,7 @@ class ReactMeme extends PureComponent {
             })
         })
     }
+    //需要 https 支持
     openCamera = () => {
         if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
             navigator.mediaDevices.getUserMedia({
@@ -239,9 +267,8 @@ class ReactMeme extends PureComponent {
     }
     fontSizeChange = (value) => {
         this.setState({ fontSize: value })
-        console.log(value);
     }
-    //截取当前摄像头 帧
+    //TODO:截取当前摄像头 帧
     screenShotCamera = () => {
 
     }
@@ -259,7 +286,7 @@ class ReactMeme extends PureComponent {
                 return message.error('无效的图片格式')
             }
             if (~~(size / 1024) >= IMG_MAX_SIZE) {
-                let maxSize = IMG_MAX_SIZE > 1024 ? `${IMG_MAX_SIZE}MB` : `${IMG_MAX_SIZE}KB`
+                let maxSize = IMG_MAX_SIZE > 1024 ? `${IMG_MAX_SIZE / 1024}MB` : `${IMG_MAX_SIZE}KB`
                 return message.warning(`图片最大 ${maxSize}!`)
             }
             this.setState({ loading: true })
@@ -431,6 +458,13 @@ class ReactMeme extends PureComponent {
             transform: `rotate(${rotate}deg) scale(${_scale})`
         }
 
+        const previewImageEvents = loadingImgReady
+            ? {
+                onWheel: this.bindImageMouseWheel,
+                onMouseLeave: this.closeImageWhellTip
+            }
+            : {}
+
         return (
             <Container className={prefix}>
                 <Divider><h2 className="title">{prefix}</h2></Divider>
@@ -452,8 +486,7 @@ class ReactMeme extends PureComponent {
                                     className={cls("preview-content", {
                                         [this.activeDragAreaClass]: dragAreaClass
                                     })}
-                                    onWheel={this.bindMouseWheel}
-                                    onMouseLeave={this.closeImageWhellTip}
+                                    {...previewImageEvents}
                                     style={isRotateText ? imageTransFormConfig : {}}
                                 >
                                     {
@@ -481,12 +514,14 @@ class ReactMeme extends PureComponent {
                                         onStop={this.stopDragText}
                                         defaultPosition={{ x: 0, y: 0 }}
                                     >
-                                        <div className={`${prefix}-text`}
+                                        <div
+                                            className={`${prefix}-text`}
                                             style={{
                                                 color: fontColor,
                                                 fontSize,
                                                 fontFamily: font
                                             }}
+                                            onWheel={this.bindTextWheel}
                                         >
                                             {/*<Tooltip 
                                         placement="right" 
@@ -585,8 +620,9 @@ class ReactMeme extends PureComponent {
                                     label: '文字大小',
                                     component: (
                                         <Slider
-                                            min={fontSize[0]}
-                                            max={fontSize[fontSize.length - 1]}
+                                            min={FONT_SIZE[0]}
+                                            max={FONT_SIZE[FONT_SIZE.length - 1]}
+                                            value={fontSize}
                                             defaultValue={defaultFontSize}
                                             tipFormatter={(value) => `${value}px`}
                                             onChange={this.fontSizeChange}
