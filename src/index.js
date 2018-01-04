@@ -151,8 +151,12 @@ class ReactMeme extends PureComponent {
 
         waterMarkCtx.font = `${fontSize}px ${font}`
         waterMarkCtx.fillStyle = fontColor
-        //TODO getImageData 算出有颜色区域的 宽高 目前 高度无法计算
-        waterMarkCtx.fillText(text, fillX - textWidth, fillY)
+        waterMarkCtx.fillText(text, 0, 0)
+
+        //清空画布 获取文字像素点 算出更精准的宽高
+        const { textW, textH } = this.getTextStyle(waterMarkCtx, previewContentStyle.width, previewContentStyle.height)
+        waterMarkCtx.clearRect(0, 0, textCanvas.width, textCanvas.height)
+        waterMarkCtx.fillText(text, fillX - textWidth, fillY - textH)
 
         return textCanvas
     }
@@ -404,8 +408,35 @@ class ReactMeme extends PureComponent {
         })
     }
     //文字换行
-    textPressEnter = ()=>{
+    textPressEnter = () => {
         console.log(this.state.text);
+    }
+    //获取文字精准的宽高
+    getTextStyle = (ctx, canvasWidth, canvasHeight) => {
+        const { data, width: textDataWidth, height: textDataHeight } = ctx.getImageData(0, 0, canvasWidth, canvasHeight || canvasWidth)
+        let px = 0
+        for (let i = 0, len = textDataWidth * textDataHeight; i < len; i++) {
+            const [r, g, b, a] = [data[i * 4], data[i * 4 + 1], data[i * 4 + 2], data[i * 4 + 3]]
+
+            const rgba = `rgba(${r},${g},${b},${a})`
+            //过滤出 有颜色的像素点 
+            if (rgba !== "rgba(0,0,0,0)") {
+                ++px
+            } else {
+                continue
+            }
+        }
+
+        //rgba 组成 1个像素 所以除以4
+        const w = Math.ceil(canvasWidth / (px / 4))
+        const h = Math.ceil(canvasHeight / (px / 4))
+
+        console.log(w, h)
+        //TODO 宽度不晓得咋算
+        return {
+            textW: 0,
+            textH: h
+        }
     }
     render() {
         const { getFieldDecorator } = this.props.form
