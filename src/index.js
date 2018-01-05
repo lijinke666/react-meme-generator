@@ -62,7 +62,8 @@ class ReactMeme extends PureComponent {
         defaultImageProcess: imageProcess[0].value,
         defaultText: defaultFontText,
         defaultFontSize,
-        drag: true
+        drag: true,
+        paste: true
     }
     toggleColorPicker = () => {
         this.setState({ displayColorPicker: !this.state.displayColorPicker })
@@ -282,63 +283,62 @@ class ReactMeme extends PureComponent {
     }
     imageChange = () => {
         const files = Array.from(this.file.files)
-        this.renderImage(files)
+        this.renderImage(files[0])
     }
-    renderImage = (files = []) => {
-        files.forEach((file) => {
-            let { type, name, size } = file
-            if (!isImage(type)) {
-                return message.error('无效的图片格式')
-            }
-            if (~~(size / 1024) >= IMG_MAX_SIZE) {
-                let maxSize = IMG_MAX_SIZE > 1024 ? `${IMG_MAX_SIZE / 1024}MB` : `${IMG_MAX_SIZE}KB`
-                return message.warning(`图片最大 ${maxSize}!`)
-            }
-            this.setState({ loading: true })
-            // const reader = new FileReader()
-            // reader.onloadstart = () => {
-            //     this.setState({ loading: true })
-            // }
-            // reader.onabort = () => {
-            //     this.setState({
-            //         loading: false,
-            //         loadingImgReady: false,
-            //         currentImg: {}
-            //     })
-            //     message.error(`${name}读取中断!`)
-            // };
-            // reader.onerror = () => {
-            //     this.setState({
-            //         loading: false,
-            //         loadingImgReady: false,
-            //         currentImg: {}
-            //     })
-            //     message.error(`${name}读取失败`)
-            // };
-            // reader.onload = (e) => {
-            //     const result = e.target.result        //读取失败时  null   否则就是读取的结果
-            //     this.setState({
-            //         loading: false,
-            //         loadingImgReady: true,
-            //         currentImg: {
-            //             src: result,
-            //             size: `${~~(size / 1024)}KB`,
-            //             type
-            //         }
-            //     })
-            // }
-            // reader.readAsBinaryString(file)      //二进制
-            const url = window.URL.createObjectURL(file)
-            this.setState({
-                currentImg: {
-                    src: url,
-                    size: `${~~(size / 1024)}KB`,
-                    type
-                },
-                scale: defaultScale,
-                loading: false,
-                loadingImgReady: true,
-            })
+    renderImage = (file={}) => {
+        let { type, name, size } = file
+        console.log(type);
+        if (!isImage(type)) {
+            return message.error('无效的图片格式')
+        }
+        if (~~(size / 1024) >= IMG_MAX_SIZE) {
+            let maxSize = IMG_MAX_SIZE > 1024 ? `${IMG_MAX_SIZE / 1024}MB` : `${IMG_MAX_SIZE}KB`
+            return message.warning(`图片最大 ${maxSize}!`)
+        }
+        this.setState({ loading: true })
+        // const reader = new FileReader()
+        // reader.onloadstart = () => {
+        //     this.setState({ loading: true })
+        // }
+        // reader.onabort = () => {
+        //     this.setState({
+        //         loading: false,
+        //         loadingImgReady: false,
+        //         currentImg: {}
+        //     })
+        //     message.error(`${name}读取中断!`)
+        // };
+        // reader.onerror = () => {
+        //     this.setState({
+        //         loading: false,
+        //         loadingImgReady: false,
+        //         currentImg: {}
+        //     })
+        //     message.error(`${name}读取失败`)
+        // };
+        // reader.onload = (e) => {
+        //     const result = e.target.result        //读取失败时  null   否则就是读取的结果
+        //     this.setState({
+        //         loading: false,
+        //         loadingImgReady: true,
+        //         currentImg: {
+        //             src: result,
+        //             size: `${~~(size / 1024)}KB`,
+        //             type
+        //         }
+        //     })
+        // }
+        // reader.readAsBinaryString(file)      //二进制
+        const url = window.URL.createObjectURL(file)
+        this.setState({
+            currentImg: {
+                src: url,
+                size: `${~~(size / 1024)}KB`,
+                type
+            },
+            scale: defaultScale,
+            loading: false,
+            loadingImgReady: true,
         })
     }
     stopAll = (target) => {
@@ -346,33 +346,33 @@ class ReactMeme extends PureComponent {
         target.preventDefault()
     }
     //绑定拖拽事件
-    addDragListener = (dragArea, dragAreaClass = true) => {
+    bindDragListener = (dragArea, dragAreaClass = true) => {
         document.addEventListener('dragenter', (e) => {
-            this.addDragAreaStyle();
-        }, false);
+            this.addDragAreaStyle()
+        }, false)
         document.addEventListener('dragleave', (e) => {
-            this.removeDragAreaStyle();
-        }, false);
+            this.removeDragAreaStyle()
+        }, false)
         //进入
         dragArea.addEventListener('dragenter', (e) => {
             this.stopAll(e)
-            this.addDragAreaStyle();
-        }, false);
+            this.addDragAreaStyle()
+        }, false)
         //离开
         dragArea.addEventListener('dragleave', (e) => {
             this.stopAll(e)
             this.removeDragAreaStyle()
-        }, false);
+        }, false)
         //移动
         dragArea.addEventListener('dragover', (e) => {
             this.stopAll(e)
             this.addDragAreaStyle()
-        }, false);
+        }, false)
         dragArea.addEventListener('drop', (e) => {
             this.stopAll(e)
             this.removeDragAreaStyle()
-            const files = (e.dataTransfer || e.originalEvent.dataTransfer).files
-            this.renderImage(Array.from(files))
+            const files = e.dataTransfer.files
+            this.renderImage(Array.from(files)[0])
         }, false)
     }
     addDragAreaStyle = () => {
@@ -437,6 +437,25 @@ class ReactMeme extends PureComponent {
             textW: 0,
             textH: h
         }
+    }
+    pasteHandler = (e) => {
+        const { items, types } = e.clipboardData
+        if (!items) return
+
+        const item = items[0]      //只要一张图片
+        const { kind, type } = item  //kind 种类 ,type 类型 
+        if (kind.toLocaleLowerCase() != "file") {
+            return message.error('错误的文件类型!')
+        }
+        const file = item.getAsFile()
+        this.renderImage(file)
+    }
+    //粘贴图片
+    bindPasteListener = (area) => {
+        area.addEventListener('paste', this.pasteHandler)
+    }
+    unBindPasteListener = (area) => {
+        area.removeEventListener('paste', this.pasteHandler)
     }
     render() {
         const { getFieldDecorator } = this.props.form
@@ -706,9 +725,14 @@ class ReactMeme extends PureComponent {
             </Container>
         )
     }
+    componentWillUnmount() {
+        const { drag, paste } = this.props
+        paste && this.unBindPasteListener(document.body)
+    }
     componentDidMount() {
-        const { drag } = this.props
-        drag && this.addDragListener(this.previewArea)
+        const { drag, paste } = this.props
+        drag && this.bindDragListener(this.previewContent)
+        paste && this.bindPasteListener(document.body)
     }
 }
 
