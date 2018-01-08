@@ -94,7 +94,7 @@ class ReactMeme extends PureComponent {
 
         console.log(textDragX, textDragY);
 
-        const canvas = document.createElement('canvas')
+        const canvas = this.memeCanvas
         const ctx = canvas.getContext('2d')
         canvas.width = previewContentStyle.width
         canvas.height = previewContentStyle.height
@@ -143,21 +143,29 @@ class ReactMeme extends PureComponent {
             font,
             text
         } = this.state
+        console.log(text);
+        console.log(text.split(/\n/));
+        //多行文本
+        const multText = text.split(/\n/).filter(text => text)
 
         const textCanvas = document.createElement('canvas')
         const waterMarkCtx = textCanvas.getContext('2d')
         textCanvas.width = previewContentStyle.width
         textCanvas.height = previewContentStyle.height
-        const { width: textWidth } = waterMarkCtx.measureText(text)  //文字宽度
 
-        waterMarkCtx.font = `${fontSize}px ${font}`
-        waterMarkCtx.fillStyle = fontColor
-        waterMarkCtx.fillText(text, 0, 0)
+        //多行文本绘制
+        multText.forEach((currentText, i) => {
+            const { width: textWidth } = waterMarkCtx.measureText(currentText)  //文字宽度
 
-        //清空画布 获取文字像素点 算出更精准的宽高
-        const { textW, textH } = this.getTextStyle(waterMarkCtx, previewContentStyle.width, previewContentStyle.height)
-        waterMarkCtx.clearRect(0, 0, textCanvas.width, textCanvas.height)
-        waterMarkCtx.fillText(text, fillX - textWidth, fillY - textH)
+            waterMarkCtx.font = `${fontSize}px ${font}`
+            waterMarkCtx.fillStyle = fontColor
+            waterMarkCtx.fillText(currentText, 0, 0)
+
+            //清空画布 获取文字像素点 算出更精准的宽高
+            const { textW, textH } = this.getTextStyle(waterMarkCtx, previewContentStyle.width, previewContentStyle.height)
+            waterMarkCtx.clearRect(0, 0, textCanvas.width, textCanvas.height)
+            waterMarkCtx.fillText(currentText, (fillX - textWidth) * (i + 1), (fillY - textH) * (i + 1))
+        })
 
         return textCanvas
     }
@@ -218,27 +226,18 @@ class ReactMeme extends PureComponent {
         })
         return false
     }
-    createMeme = (e) => {
+    openMemeModal = () => {
         if (!this.state.loadingImgReady) return message.error('请选择图片!')
-        this.drawMeme().then((meme) => {
-            Modal.confirm({
-                title: "确认生成吗?",
-                content: (
-                    <img src={meme} style={{ "maxWidth": "100%" }} />
-                ),
-                onOk: () => {
-                    //TODO 这种方式生成图片 不行 :(
-                    const blob = new Blob(["\ufeff" + meme], {
-                        type: "image/png"
-                    })
-                    const url = URL.createObjectURL(blob)
-                    const link = document.createElement('a')
-                    link.setAttribute('href', url)
-                    link.setAttribute('download', Date.now())
-                    link.click()
-                }
+        this.setState({ memeModalVisible: true }, () => {
+            this.drawMeme().then((meme) => {
             })
         })
+    }
+    closeMemeModal = () => {
+        this.setState({ memeModalVisible: false })
+    }
+    createMeme = (e) => {
+
     }
     //需要 https 支持
     openCamera = () => {
@@ -285,7 +284,7 @@ class ReactMeme extends PureComponent {
         const files = Array.from(this.file.files)
         this.renderImage(files[0])
     }
-    renderImage = (file={}) => {
+    renderImage = (file = {}) => {
         let { type, name, size } = file
         console.log(type);
         if (!isImage(type)) {
@@ -486,7 +485,8 @@ class ReactMeme extends PureComponent {
             isRotateText,
             rotate,
             scale,
-            imageWhellTipVisible
+            imageWhellTipVisible,
+            memeModalVisible
         } = this.state
 
         const _scale = (scale).toFixed(2)
@@ -704,7 +704,7 @@ class ReactMeme extends PureComponent {
                                 })
                             }
                             <Row>
-                                <Col span={3}><Button type="primary" onClick={this.createMeme}>确认生成</Button></Col>
+                                <Col span={3}><Button type="primary" onClick={this.openMemeModal}>确认生成</Button></Col>
                             </Row>
                         </Col>
                     </Row>
@@ -721,6 +721,18 @@ class ReactMeme extends PureComponent {
                     onOk={this.screenShotCamera}
                 >
                     <video src={cameraUrl}></video>
+                </Modal>
+
+                <Modal
+                    maskClosable={false}
+                    visible={memeModalVisible}
+                    title="表情包生成"
+                    okText="确认生成"
+                    cancelText="再调整一下"
+                    onCancel={this.closeMemeModal}
+                    onOk={this.createMeme}
+                >
+                    <canvas ref={node => this.memeCanvas = node}></canvas>
                 </Modal>
             </Container>
         )
