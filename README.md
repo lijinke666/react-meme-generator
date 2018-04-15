@@ -1,5 +1,5 @@
 # react-meme-generator
-:boy: a meme generator for react
+:joy: a meme generator for react
 
 Have Fun :)
 
