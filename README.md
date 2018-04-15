@@ -6,7 +6,7 @@ Have Fun :)
 ## Screenshots
 ![example](https://github.com/lijinke666/react-meme/blob/master/assetsImg/example.gif)
 
-## Example
+## Usage
 [https://lijinke666.github.io/react-meme/](https://lijinke666.github.io/react-meme/)
 
 ## Development
