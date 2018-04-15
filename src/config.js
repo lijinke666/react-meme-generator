@@ -56,7 +56,7 @@ export const defaultFontSize = fontSize[4]
 
 export const defaultFontColor = "#444"
 
-export const defaultFontText = "请输入文字"
+export const defaultFontText = "示例文字"
 
 //图片最大限制
 export const img_max_size = 1024

@@ -56,7 +56,8 @@ class ReactMemeGenerator extends PureComponent {
         scale: defaultScale,           //缩放比例
         toggleText: false ,              //为false  文字换行时属于整体 反之为独立的一行 不受其他控制
         width:previewContentStyle.width,
-        height:previewContentStyle.height
+        height:previewContentStyle.height,
+        drawLoading:false
     }
     activeDragAreaClass = "drag-active"
     constructor(props) {
@@ -88,11 +89,16 @@ class ReactMemeGenerator extends PureComponent {
     drawMeme = () => {
         const {width,height,loadingImgReady} = this.state
         if (!loadingImgReady) return message.error('请选择图片!')
+
+        this.setState({drawLoading:true})
+
         const imageArea = document.querySelector('.preview-content')
         dometoimage.toPng(imageArea,{
-            width,height
+            width,
+            height
         })
             .then((dataUrl) => {
+                this.setState({drawLoading:false})
                 Modal.confirm({
                     title: "生成成功",
                     content: (
@@ -110,6 +116,7 @@ class ReactMemeGenerator extends PureComponent {
             })
             .catch((err) => {
                 message.error(err)
+                this.setState({drawLoading:false})
             })
     }
     closeImageWhellTip = () => {
@@ -362,7 +369,8 @@ class ReactMemeGenerator extends PureComponent {
             scale,
             imageWhellTipVisible,
             toggleText,
-            memeModalVisible
+            memeModalVisible,
+            drawLoading
         } = this.state
 
         const _scale = (scale).toFixed(2)
@@ -598,12 +606,12 @@ class ReactMemeGenerator extends PureComponent {
                                 })
                             }
                             <Row>
-                                <Col span={3}><Button type="primary" style={{ "width": "100%" }} onClick={this.drawMeme}>确认生成</Button></Col>
+                                <Col span={3}><Button loading={drawLoading} type="primary" style={{ "width": "100%" }} onClick={this.drawMeme}>生成表情包</Button></Col>
                             </Row>
                         </Col>
                     </Row>
                 </section>
-                <Divider>{APPVERSION}</Divider>
+                <Divider><a href={repository.url} target="_blank"></a>GitHub: {repository.url} (version:{APPVERSION})</Divider>
 
                 <Modal
                     maskClosable={false}

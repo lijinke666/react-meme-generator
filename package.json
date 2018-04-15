@@ -1,6 +1,6 @@
 {
   "name": "react-meme-generator",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "a meme generator for react",
   "main": "lib/index.js",
   "scripts": {
@@ -10,14 +10,14 @@
     "build-demo": "webpack --env.mode=PROD --progress --config  ./example/webpack.config.js",
     "demo": "webpack-dev-server --progress --inline --hot --config  ./example/webpack.config.js"
   },
-  "author": "jinke.li",
+  "author": "Jinke.Li",
   "repository": {
     "type": "git",
-    "url": "https://github.com/lijinke666/react-meme"
+    "url": "https://github.com/lijinke666/react-meme-generator"
   },
-  "homepage": "https://lijinke666.github.io/react-meme",
+  "homepage": "https://lijinke666.github.io/react-meme-generator",
   "bugs": {
-    "url": "https://github.com/lijinke666/react-meme/issues"
+    "url": "https://github.com/lijinke666/react-meme-generator/issues"
   },
   "license": "MIT",
   "theme": {
