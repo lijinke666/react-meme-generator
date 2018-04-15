@@ -1,6 +1,6 @@
 {
   "name": "react-meme",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "react 表情包 制作器 ^_^",
   "main": "lib/index.js",
   "scripts": {
@@ -33,6 +33,7 @@
   "dependencies": {
     "antd": "^3.0.3",
     "classnames": "^2.2.5",
+    "dom-to-image": "^2.6.0",
     "prop-types": "^15.6.0",
     "react": "^16.2.0",
     "react-color": "^2.13.8",

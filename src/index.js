@@ -12,6 +12,7 @@ import cls from "classnames"
 import { Button, Divider, Col, Row, Form, Input, Checkbox, Modal, message, Select, Slider, Tooltip } from "antd"
 import { SketchPicker } from 'react-color'
 import Draggable from "react-draggable"
+import dometoimage from "dom-to-image"
 import {
     prefix,
     fontFamily,
@@ -25,8 +26,10 @@ import {
     range,
     whellScaleRange,
     defaultScale,
+    defaultRotate
 } from "./config"
 import { isImage } from "./utils"
+import { name as APPNAME, version as APPVERSION, repository } from "../package.json"
 
 const { FormItem } = Form
 const { Option } = Select
@@ -47,8 +50,9 @@ class ReactMeme extends PureComponent {
         imageDragX: 0,
         imageDragY: 0,
         isRotateText: false,
-        rotate: 0,          //旋转角度
-        scale: defaultScale           //缩放比例
+        rotate: defaultRotate,          //旋转角度
+        scale: defaultScale,           //缩放比例
+        toggleText: false               //为false  文字换行时属于整体 反之为独立的一行 不受其他控制
     }
     activeDragAreaClass = "drag-active"
     constructor(props) {
@@ -61,6 +65,12 @@ class ReactMeme extends PureComponent {
         defaultFontSize,
         drag: true
     }
+    imageWidthChange = (e)=>{
+        this.setState({width:e.target.value})
+    }
+    imageHeightChange = (e)=>{
+        this.setState({height:e.target.value})
+    }
     toggleColorPicker = () => {
         this.setState({ displayColorPicker: !this.state.displayColorPicker })
     }
@@ -71,86 +81,31 @@ class ReactMeme extends PureComponent {
         this.setState({ fontColor: hex })
     }
     drawMeme = () => {
-        const {
-            fontSize,
-            fontColor,
-            font,
-            rotate,
-            text,
-            scale,
-            textDragX,
-            textDragY,
-            imageDragX,
-            imageDragY,
-            currentImg: {
-                src,
-                type
-            }
-        } = this.state
-
-        console.log(textDragX, textDragY);
-
-        const canvas = document.createElement('canvas')
-        const ctx = canvas.getContext('2d')
-        canvas.width = previewContentStyle.width
-        canvas.height = previewContentStyle.height
-
-        const imgOffset = this.previewImage.getBoundingClientRect()
-        const clipOffset = this.previewContent.getBoundingClientRect()
-
-        const sx = ~~(clipOffset.left - imgOffset.left)
-        const sy = ~~(clipOffset.top - imgOffset.top)
-        return new Promise((res, rej) => {
-            const image = new Image()
-            image.src = src
-            image.onload = () => {
-                ctx.save()
-                ctx.rotate(rotate * Math.PI / 180)
-                ctx.drawImage(
-                    image,
-                    sx / scale,
-                    sy / scale,
-                    previewContentStyle.width / scale,
-                    previewContentStyle.height / scale,
-                    0, 0,
-                    previewContentStyle.width,
-                    previewContentStyle.height
-                )
-                if (!!text) {
-                    const textCanvas = this.drawTextWaterMark(
-                        textDragX,
-                        textDragY
-                    )
-                    ctx.drawImage(textCanvas, textDragX, textDragY)
-                }
-                ctx.restore()
-                const result = canvas.toDataURL("image/png")
-                res(result)
-            }
-            image.onerror = (err) => rej(err)
+        const {width,height,loadingImgReady} = this.state
+        if (!loadingImgReady) return message.error('请选择图片!')
+        const imageArea = document.querySelector('.preview-content')
+        dometoimage.toPng(imageArea,{
+            width,height
         })
-
-    }
-    //绘制文字水印
-    drawTextWaterMark = (fillX, fillY) => {
-        const {
-            fontSize,
-            fontColor,
-            font,
-            text
-        } = this.state
-
-        const textCanvas = document.createElement('canvas')
-        const waterMarkCtx = textCanvas.getContext('2d')
-        const { width: textWidth } = waterMarkCtx.measureText(text)  //文字宽度
-
-        waterMarkCtx.font = `${fontSize}px ${font}`
-        waterMarkCtx.fillStyle = fontColor
-        waterMarkCtx.textBaseline = "middle"
-        //TODO getImageData 算出有颜色区域的 宽高 目前 高度无法计算
-        waterMarkCtx.fillText(text, fillX - textWidth, fillY)
-
-        return textCanvas
+            .then((dataUrl) => {
+                Modal.confirm({
+                    title: "生成成功",
+                    content: (
+                        <img src={dataUrl} style={{ "maxWidth": "100%" }} />
+                    ),
+                    onOk: () => {
+                        var link = document.createElement('a');
+                        link.download = `${Date.now()}.png`
+                        link.href = dataUrl
+                        link.click()
+                    },
+                    okText: "立即下载",
+                    cancelText: "再改一改"
+                })
+            })
+            .catch((err) => {
+                message.error(err)
+            })
     }
     closeImageWhellTip = () => {
         this.setState({ imageWhellTipVisible: false })
@@ -159,6 +114,12 @@ class ReactMeme extends PureComponent {
         const { scale } = this.state
         if (scale != defaultScale) {
             this.setState({ scale: defaultScale })
+        }
+    }
+    resetImageRotate = () => {
+        const { rotate } = this.state
+        if (rotate != defaultRotate) {
+            this.setState({ scale: defaultRotate })
         }
     }
     bindMouseWheel = (e) => {
@@ -170,7 +131,7 @@ class ReactMeme extends PureComponent {
                 _scale -= range
                 _scale = Math.max(min, _scale)
                 return {
-                    scale:_scale,
+                    scale: _scale,
                     imageWhellTipVisible: true
                 }
             } else {
@@ -185,28 +146,6 @@ class ReactMeme extends PureComponent {
         })
         return false
     }
-    createMeme = (e) => {
-        if (!this.state.loadingImgReady) return message.error('请选择图片!')
-        this.drawMeme().then((meme) => {
-            Modal.confirm({
-                title: "确认生成吗?",
-                content: (
-                    <img src={meme} style={{ "maxWidth": "100%" }} />
-                ),
-                onOk: () => {
-                    //TODO 这种方式生成图片 不行 :(
-                    const blob = new Blob(["\ufeff" + meme], {
-                        type: "image/png"
-                    })
-                    const url = URL.createObjectURL(blob)
-                    const link = document.createElement('a')
-                    link.setAttribute('href', url)
-                    link.setAttribute('download', Date.now())
-                    link.click()
-                }
-            })
-        })
-    }
     openCamera = () => {
         if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
             navigator.mediaDevices.getUserMedia({
@@ -216,7 +155,7 @@ class ReactMeme extends PureComponent {
                 .then((data) => {
                     const cameraUrl = window.URL.createObjectURL(data)
                     this.setState({
-                        // cameraUrl,
+                        cameraUrl,
                         cameraVisible: true
                     })
                 })
@@ -239,7 +178,6 @@ class ReactMeme extends PureComponent {
     }
     fontSizeChange = (value) => {
         this.setState({ fontSize: value })
-        console.log(value);
     }
     //截取当前摄像头 帧
     screenShotCamera = () => {
@@ -263,39 +201,6 @@ class ReactMeme extends PureComponent {
                 return message.warning(`图片最大 ${maxSize}!`)
             }
             this.setState({ loading: true })
-            // const reader = new FileReader()
-            // reader.onloadstart = () => {
-            //     this.setState({ loading: true })
-            // }
-            // reader.onabort = () => {
-            //     this.setState({
-            //         loading: false,
-            //         loadingImgReady: false,
-            //         currentImg: {}
-            //     })
-            //     message.error(`${name}读取中断!`)
-            // };
-            // reader.onerror = () => {
-            //     this.setState({
-            //         loading: false,
-            //         loadingImgReady: false,
-            //         currentImg: {}
-            //     })
-            //     message.error(`${name}读取失败`)
-            // };
-            // reader.onload = (e) => {
-            //     const result = e.target.result        //读取失败时  null   否则就是读取的结果
-            //     this.setState({
-            //         loading: false,
-            //         loadingImgReady: true,
-            //         currentImg: {
-            //             src: result,
-            //             size: `${~~(size / 1024)}KB`,
-            //             type
-            //         }
-            //     })
-            // }
-            // reader.readAsBinaryString(file)      //二进制
             const url = window.URL.createObjectURL(file)
             this.setState({
                 currentImg: {
@@ -349,8 +254,9 @@ class ReactMeme extends PureComponent {
     removeDragAreaStyle = () => {
         this.setState({ dragAreaClass: false })
     }
-    textChnage = (e) => {
-        this.setState({ text: e.target.value })
+    textChange = (e) => {
+        const text = e.target.value
+        this.setState({ text })
     }
     fontFamilyChange = (value) => {
         this.setState({ font: value })
@@ -374,6 +280,9 @@ class ReactMeme extends PureComponent {
         this.setState({
             isRotateText: e.target.checked
         })
+    }
+    toggleText = (e) => {
+        this.setState({ toggleText: e.target.checked })
     }
     render() {
         const { getFieldDecorator } = this.props.form
@@ -404,7 +313,8 @@ class ReactMeme extends PureComponent {
             isRotateText,
             rotate,
             scale,
-            imageWhellTipVisible
+            imageWhellTipVisible,
+            toggleText
         } = this.state
 
         const _scale = (scale).toFixed(2)
@@ -433,7 +343,7 @@ class ReactMeme extends PureComponent {
 
         return (
             <Container className={prefix}>
-                <Divider><h2 className="title">{prefix}</h2></Divider>
+                <Divider><h2 className="title"><a href={repository.url}>{APPNAME}</a></h2></Divider>
                 <section className={`${prefix}-main`} ref={previewArea => this.previewArea = previewArea}>
                     <Row>
                         <Col span="8">
@@ -476,27 +386,43 @@ class ReactMeme extends PureComponent {
                                             </Draggable>
                                             : undefined
                                     }
-                                    <Draggable
-                                        bounds="parent"
-                                        onStop={this.stopDragText}
-                                        defaultPosition={{ x: 0, y: 0 }}
-                                    >
-                                        <div className={`${prefix}-text`}
-                                            style={{
-                                                color: fontColor,
-                                                fontSize,
-                                                fontFamily: font
-                                            }}
-                                        >
-                                            {/*<Tooltip 
-                                        placement="right" 
-                                        title="文字可以自由拖动"
-                                      
-                                    >*/}
-                                            {text}
-                                            {/*</Tooltip>*/}
-                                        </div>
-                                    </Draggable>
+
+                                    {
+                                        toggleText
+                                            ?
+                                            text.split(/\n/).map((value, i) => {
+                                                return (
+                                                    <Draggable
+                                                        bounds="parent"
+                                                        onStop={this.stopDragText}
+                                                        key={i}
+                                                        defaultPosition={{ x: 0, y: fontSize * i }}
+                                                    >
+                                                        <div key={i} className={`${prefix}-text`}
+                                                            style={{
+                                                                color: fontColor,
+                                                                fontSize,
+                                                                fontFamily: font
+                                                            }}
+                                                        >
+                                                            {value}
+                                                        </div>
+                                                    </Draggable>
+                                                )
+                                            })
+                                            :
+                                            <Draggable defaultPosition={{ x: 0, y: 0 }}>
+                                                <pre className={`${prefix}-text`}
+                                                    style={{
+                                                        color: fontColor,
+                                                        fontSize,
+                                                        fontFamily: font
+                                                    }}
+                                                >
+                                                    {text}
+                                                </pre>
+                                            </Draggable>
+                                    }
                                 </div>
                             </Tooltip>
 
@@ -509,14 +435,16 @@ class ReactMeme extends PureComponent {
                         <Col span="16">
                             {
                                 operationRow({
-                                    label: '文字',
-                                    component: (
+                                    label: "文字",
+                                    component: [
                                         <TextArea
                                             autosize={true}
                                             value={text}
-                                            onChange={this.textChnage}
-                                        />
-                                    )
+                                            onChange={this.textChange}
+                                            style={{ marginBottom: 10 }}
+                                        />,
+                                        <Checkbox value={toggleText} onChange={this.toggleText}>每行文字独立控制</Checkbox>,
+                                    ]
                                 })
                             }
                             {
@@ -566,16 +494,17 @@ class ReactMeme extends PureComponent {
                             }
                             {
                                 operationRow({
-                                    icon: "picture",
-                                    label: '图片处理',
-                                    component: (
-                                        <Select style={{ width: "100%" }} defaultValue={defaultImageProcess}>
-                                            {
-                                                imageProcess.map(({ label, value }, i) => (
-                                                    <Option value={value} key={i}>{label}</Option>
-                                                ))
-                                            }
-                                        </Select>
+                                    icon: "line-chart",
+                                    label: '图片大小',
+                                    component:(
+                                        <Row>
+                                            <Col span={11}>
+                                            <Input placeholder="宽" defaultValue={previewContentStyle.width} addonAfter="px" addonBefore="宽" onChange={this.imageWidthChange}/>
+                                            </Col>
+                                            <Col span={11} offset={2}>
+                                            <Input placeholder="高" defaultValue={previewContentStyle.height}  addonAfter="px" addonBefore="高" onChange={this.imageHeightChange}/>
+                                            </Col>
+                                        </Row>
                                     )
                                 })
                             }
@@ -600,7 +529,7 @@ class ReactMeme extends PureComponent {
                                     label: '图像旋转',
                                     component: (
                                         <Row>
-                                            <Col span={19}>
+                                            <Col span={24}>
                                                 <Slider
                                                     min={0}
                                                     max={360}
@@ -610,20 +539,18 @@ class ReactMeme extends PureComponent {
                                                     disabled={!loadingImgReady}
                                                 />
                                             </Col>
-                                            {/* <Col span={4} offset={1}>
-                                            <Checkbox value={isRotateText} disabled={!loadingImgReady} onChange={this.toggleRotateStatus}>旋转文字</Checkbox></Col> */}
                                         </Row>
 
                                     )
                                 })
                             }
                             <Row>
-                                <Col span={3}><Button type="primary" onClick={this.createMeme}>确认生成</Button></Col>
+                                <Col span={3}><Button type="primary" style={{ "width": "100%" }} onClick={this.drawMeme}>确认生成</Button></Col>
                             </Row>
                         </Col>
                     </Row>
                 </section>
-                <Divider>开发中</Divider>
+                <Divider>{APPVERSION}</Divider>
 
                 <Modal
                     maskClosable={false}
