@@ -2,8 +2,6 @@
  * @name react 表情包 制作器
  * @author jinke.li
  * TODO
- * 文字 高度 计算
- * 预览区域支持 粘贴图片
  * 完成 摄像头捕捉
  */
 import React, { PureComponent } from "react"
@@ -13,6 +11,7 @@ import { Button, Divider, Col, Row, Form, Input, Checkbox, Modal, message, Selec
 import { SketchPicker } from 'react-color'
 import Draggable from "react-draggable"
 import dometoimage from "dom-to-image"
+import {hot} from "react-hot-loader"
 import {
     prefix,
     fontFamily,
@@ -20,14 +19,17 @@ import {
     defaultFontColor,
     imageProcess,
     defaultFontSize,
-    fontSize,
+    fontSize as FONT_SIZE,
     maxFileSize as IMG_MAX_SIZE,
     previewContentStyle,
     range,
+    textRange,
     whellScaleRange,
+    textWhellScaleRange,
     defaultScale,
     defaultRotate
 } from "./config"
+
 import { isImage } from "./utils"
 import { name as APPNAME, version as APPVERSION, repository } from "../package.json"
 
@@ -52,7 +54,9 @@ class ReactMeme extends PureComponent {
         isRotateText: false,
         rotate: defaultRotate,          //旋转角度
         scale: defaultScale,           //缩放比例
-        toggleText: false               //为false  文字换行时属于整体 反之为独立的一行 不受其他控制
+        toggleText: false ,              //为false  文字换行时属于整体 反之为独立的一行 不受其他控制
+        width:previewContentStyle.width,
+        height:previewContentStyle.height
     }
     activeDragAreaClass = "drag-active"
     constructor(props) {
@@ -63,7 +67,8 @@ class ReactMeme extends PureComponent {
         defaultImageProcess: imageProcess[0].value,
         defaultText: defaultFontText,
         defaultFontSize,
-        drag: true
+        drag: true,
+        paste: true
     }
     imageWidthChange = (e)=>{
         this.setState({width:e.target.value})
@@ -74,7 +79,7 @@ class ReactMeme extends PureComponent {
     toggleColorPicker = () => {
         this.setState({ displayColorPicker: !this.state.displayColorPicker })
     }
-    closeColorPircker = () => {
+    closeColorPicker = () => {
         this.setState({ displayColorPicker: false })
     }
     colorChange = ({ hex }) => {
@@ -122,7 +127,31 @@ class ReactMeme extends PureComponent {
             this.setState({ scale: defaultRotate })
         }
     }
-    bindMouseWheel = (e) => {
+    //文字鼠标滚轮缩放
+    bindTextWheel = (e) => {
+        e.stopPropagation()
+        const y = e.deltaY ? e.deltaY : e.wheelDeltaY    //火狐有特殊
+        const [min, max] = textWhellScaleRange
+        this.setState(({ fontSize }) => {
+            let _fontSize = fontSize
+            if (y > 0) {
+                _fontSize -= textRange
+                _fontSize = Math.max(min, _fontSize)
+                return {
+                    fontSize: _fontSize,
+                }
+            } else {
+                _fontSize += textRange
+                _fontSize = Math.min(max, _fontSize)
+                return {
+                    fontSize: _fontSize
+                }
+            }
+        })
+        return false
+    }
+    //图片鼠标滚轮缩放
+    bindImageMouseWheel = (e) => {
         const y = e.deltaY ? e.deltaY : e.wheelDeltaY    //火狐有特殊
         const [min, max] = whellScaleRange
         this.setState(({ scale }) => {
@@ -179,7 +208,7 @@ class ReactMeme extends PureComponent {
     fontSizeChange = (value) => {
         this.setState({ fontSize: value })
     }
-    //截取当前摄像头 帧
+    //TODO:截取当前摄像头 帧
     screenShotCamera = () => {
 
     }
@@ -188,10 +217,10 @@ class ReactMeme extends PureComponent {
     }
     imageChange = () => {
         const files = Array.from(this.file.files)
-        this.renderImage(files)
+        this.renderImage(files[0])
     }
-    renderImage = (files = []) => {
-        files.forEach((file) => {
+    renderImage = (file) => {
+        if(file && Object.is(typeof (file),"object")){
             let { type, name, size } = file
             if (!isImage(type)) {
                 return message.error('无效的图片格式')
@@ -212,40 +241,40 @@ class ReactMeme extends PureComponent {
                 loading: false,
                 loadingImgReady: true,
             })
-        })
+        }
     }
     stopAll = (target) => {
         target.stopPropagation()
         target.preventDefault()
     }
     //绑定拖拽事件
-    addDragListener = (dragArea, dragAreaClass = true) => {
+    bindDragListener = (dragArea, dragAreaClass = true) => {
         document.addEventListener('dragenter', (e) => {
-            this.addDragAreaStyle();
-        }, false);
+            this.addDragAreaStyle()
+        }, false)
         document.addEventListener('dragleave', (e) => {
-            this.removeDragAreaStyle();
-        }, false);
+            this.removeDragAreaStyle()
+        }, false)
         //进入
         dragArea.addEventListener('dragenter', (e) => {
             this.stopAll(e)
-            this.addDragAreaStyle();
-        }, false);
+            this.addDragAreaStyle()
+        }, false)
         //离开
         dragArea.addEventListener('dragleave', (e) => {
             this.stopAll(e)
             this.removeDragAreaStyle()
-        }, false);
+        }, false)
         //移动
         dragArea.addEventListener('dragover', (e) => {
             this.stopAll(e)
             this.addDragAreaStyle()
-        }, false);
+        }, false)
         dragArea.addEventListener('drop', (e) => {
             this.stopAll(e)
             this.removeDragAreaStyle()
-            const files = (e.dataTransfer || e.originalEvent.dataTransfer).files
-            this.renderImage(Array.from(files))
+            const files = e.dataTransfer.files
+            this.renderImage(Array.from(files)[0])
         }, false)
     }
     addDragAreaStyle = () => {
@@ -254,9 +283,8 @@ class ReactMeme extends PureComponent {
     removeDragAreaStyle = () => {
         this.setState({ dragAreaClass: false })
     }
-    textChange = (e) => {
-        const text = e.target.value
-        this.setState({ text })
+    onTextChange = (e) => {
+        this.setState({ text: e.target.value })
     }
     fontFamilyChange = (value) => {
         this.setState({ font: value })
@@ -283,6 +311,25 @@ class ReactMeme extends PureComponent {
     }
     toggleText = (e) => {
         this.setState({ toggleText: e.target.checked })
+    }
+    pasteHandler = (e) => {
+        const { items, types } = e.clipboardData
+        if (!items) return
+
+        const item = items[0]      //只要一张图片
+        const { kind, type } = item  //kind 种类 ,type 类型 
+        if (kind.toLocaleLowerCase() != "file") {
+            return message.error('错误的文件类型!')
+        }
+        const file = item.getAsFile()
+        this.renderImage(file)
+    }
+    //粘贴图片
+    bindPasteListener = (area) => {
+        area.addEventListener('paste', this.pasteHandler)
+    }
+    unBindPasteListener = (area) => {
+        area.removeEventListener('paste', this.pasteHandler)
     }
     render() {
         const { getFieldDecorator } = this.props.form
@@ -314,7 +361,8 @@ class ReactMeme extends PureComponent {
             rotate,
             scale,
             imageWhellTipVisible,
-            toggleText
+            toggleText,
+            memeModalVisible
         } = this.state
 
         const _scale = (scale).toFixed(2)
@@ -341,6 +389,13 @@ class ReactMeme extends PureComponent {
             transform: `rotate(${rotate}deg) scale(${_scale})`
         }
 
+        const previewImageEvents = loadingImgReady
+            ? {
+                onWheel: this.bindImageMouseWheel,
+                onMouseLeave: this.closeImageWhellTip
+            }
+            : {}
+
         return (
             <Container className={prefix}>
                 <Divider><h2 className="title"><a href={repository.url}>{APPNAME}</a></h2></Divider>
@@ -362,8 +417,7 @@ class ReactMeme extends PureComponent {
                                     className={cls("preview-content", {
                                         [this.activeDragAreaClass]: dragAreaClass
                                     })}
-                                    onWheel={this.bindMouseWheel}
-                                    onMouseLeave={this.closeImageWhellTip}
+                                    {...previewImageEvents}
                                     style={isRotateText ? imageTransFormConfig : {}}
                                 >
                                     {
@@ -440,11 +494,14 @@ class ReactMeme extends PureComponent {
                                         <TextArea
                                             autosize={true}
                                             value={text}
-                                            onChange={this.textChange}
+                                            placeholder="请输入文字"
+                                            onChange={this.onTextChange}
                                             style={{ marginBottom: 10 }}
+                                            key="text-area"
                                         />,
-                                        <Checkbox value={toggleText} onChange={this.toggleText}>每行文字独立控制</Checkbox>,
+                                        <Checkbox key="check-box" value={toggleText} onChange={this.toggleText}>每行文字独立控制</Checkbox>,
                                     ]
+                                    
                                 })
                             }
                             {
@@ -479,7 +536,7 @@ class ReactMeme extends PureComponent {
                                             {
                                                 displayColorPicker
                                                     ? <div className="popover">
-                                                        <div className="cover" onClick={this.closeColorPircker} />
+                                                        <div className="cover" onClick={this.closeColorPicker} />
                                                         <SketchPicker
                                                             color={fontColor}
                                                             onChange={this.colorChange}
@@ -514,8 +571,9 @@ class ReactMeme extends PureComponent {
                                     label: '文字大小',
                                     component: (
                                         <Slider
-                                            min={fontSize[0]}
-                                            max={fontSize[fontSize.length - 1]}
+                                            min={FONT_SIZE[0]}
+                                            max={FONT_SIZE[FONT_SIZE.length - 1]}
+                                            value={fontSize}
                                             defaultValue={defaultFontSize}
                                             tipFormatter={(value) => `${value}px`}
                                             onChange={this.fontSizeChange}
@@ -528,19 +586,14 @@ class ReactMeme extends PureComponent {
                                     icon: "line-chart",
                                     label: '图像旋转',
                                     component: (
-                                        <Row>
-                                            <Col span={24}>
-                                                <Slider
-                                                    min={0}
-                                                    max={360}
-                                                    defaultValue={0}
-                                                    tipFormatter={(value) => `${value}°`}
-                                                    onChange={this.rotateImage}
-                                                    disabled={!loadingImgReady}
-                                                />
-                                            </Col>
-                                        </Row>
-
+                                        <Slider
+                                            min={0}
+                                            max={360}
+                                            defaultValue={0}
+                                            tipFormatter={(value) => `${value}°`}
+                                            onChange={this.rotateImage}
+                                            disabled={!loadingImgReady}
+                                        />
                                     )
                                 })
                             }
@@ -563,15 +616,32 @@ class ReactMeme extends PureComponent {
                 >
                     <video src={cameraUrl}></video>
                 </Modal>
+
+                <Modal
+                    maskClosable={false}
+                    visible={memeModalVisible}
+                    title="表情包生成"
+                    okText="确认生成"
+                    cancelText="再调整一下"
+                    onCancel={this.closeMemeModal}
+                    onOk={this.createMeme}
+                >
+                    <canvas ref={node => this.memeCanvas = node}></canvas>
+                </Modal>
             </Container>
         )
+    } 
+    componentWillUnmount() {
+        const { drag, paste } = this.props
+        paste && this.unBindPasteListener(document.body)
     }
     componentDidMount() {
-        const { drag } = this.props
-        drag && this.addDragListener(this.previewArea)
+        const { drag, paste } = this.props
+        drag && this.bindDragListener(this.previewContent)
+        paste && this.bindPasteListener(document.body)
     }
 }
 
 const _ReactMeme = Form.create()(ReactMeme)
 
-export default _ReactMeme
+export default hot(module)(_ReactMeme)

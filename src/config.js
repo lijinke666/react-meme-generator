@@ -1,4 +1,6 @@
 export const prefix = "react-meme"
+
+//可选字体配置
 export const fontFamily = [
     {
         label: "微软雅黑",
@@ -31,6 +33,7 @@ export const fontFamily = [
     }
 ]
 
+//图片处理类型 TODO
 export const imageProcess = [
     {
         label: "系统默认",
@@ -48,23 +51,32 @@ export const imageProcess = [
 
 export const fontSize = Array.from({ length: 60 }).map((_, i) => i + 1).filter(v => v > 15)
 
+//默认 20 px
 export const defaultFontSize = fontSize[4]
 
 export const defaultFontColor = "#444"
 
-export const defaultFontText = "写点什么"
+export const defaultFontText = "请输入文字"
 
+//图片最大限制
 export const img_max_size = 1024
 
-export const range = 0.05           //每次缩放的值
+//图片每次缩放的值
+export const range = 0.05    
 
-// export const maxScale = 3.0         //最大缩放
+//文字每次缩放的值
+export const textRange = 1        
 
 export const whellScaleRange = [0.4, 3.0]
 
+//文本缩放 最大最小值限制
+export const textWhellScaleRange = [fontSize[0],fontSize[fontSize.length-1]]
+
+//图片默认缩放比例
 export const defaultScale = 1.0
 export const defaultRotate = 0
 
+//图片预览区域宽高
 export const previewContentStyle = {
     width: 300,
     height: 300
