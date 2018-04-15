@@ -611,7 +611,7 @@ class ReactMemeGenerator extends PureComponent {
                         </Col>
                     </Row>
                 </section>
-                <Divider><a href={repository.url} target="_blank"></a>GitHub: {repository.url} (version:{APPVERSION})</Divider>
+                <Divider><a href={repository.url} target="_blank">GitHub</a> (version:{APPVERSION})</Divider>
 
                 <Modal
                     maskClosable={false}
