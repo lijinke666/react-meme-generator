@@ -1,6 +1,6 @@
 import React from "react"
 import ReactDOM from "react-dom"
-import ReactMeme from "../src"
+import ReactMemeGenerator from "../src"
 import {LocaleProvider} from "antd"
 import zhCN from 'antd/lib/locale-provider/zh_CN'
 
@@ -10,7 +10,7 @@ import "./example.less"
 
 const Demo = () => (
     <LocaleProvider locale={zhCN}>
-        <ReactMeme />
+        <ReactMemeGenerator />
      </LocaleProvider>
 )
 ReactDOM.render(

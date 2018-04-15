@@ -37,7 +37,7 @@ const { FormItem } = Form
 const { Option } = Select
 const { TextArea } = Input
 
-class ReactMeme extends PureComponent {
+class ReactMemeGenerator extends PureComponent {
     state = {
         cameraVisible: false,
         displayColorPicker: false,
@@ -642,6 +642,6 @@ class ReactMeme extends PureComponent {
     }
 }
 
-const _ReactMeme = Form.create()(ReactMeme)
+const _ReactMemeGenerator = Form.create()(ReactMemeGenerator)
 
-export default hot(module)(_ReactMeme)
+export default hot(module)(_ReactMemeGenerator)

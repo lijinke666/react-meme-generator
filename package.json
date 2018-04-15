@@ -1,7 +1,7 @@
 {
-  "name": "react-meme",
+  "name": "react-meme-generator",
   "version": "0.0.2",
-  "description": "react 表情包 制作器 ^_^",
+  "description": "a meme generator for react",
   "main": "lib/index.js",
   "scripts": {
     "start": "npm run demo",
@@ -28,7 +28,9 @@
     "reactjs",
     "meme",
     "emoji",
-    "component"
+    "component",
+    "generator",
+    "react-meme-generator"
   ],
   "dependencies": {
     "antd": "^3.0.3",
