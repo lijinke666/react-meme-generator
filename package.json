@@ -1,6 +1,6 @@
 {
   "name": "react-meme-generator",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "a meme generator for react",
   "main": "lib/index.js",
   "scripts": {

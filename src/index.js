@@ -188,11 +188,13 @@ class ReactMemeGenerator extends PureComponent {
                 video: true,
                 audio: true
             })
-                .then((data) => {
-                    const cameraUrl = window.URL.createObjectURL(data)
+                .then((stream) => {
+                    const cameraUrl = window.URL.createObjectURL(stream)
                     this.setState({
                         cameraUrl,
                         cameraVisible: true
+                    },()=>{
+                        this.video.play()
                     })
                 })
                 .catch((error) => {
@@ -217,7 +219,19 @@ class ReactMemeGenerator extends PureComponent {
     }
     //TODO:截取当前摄像头 帧
     screenShotCamera = () => {
-
+        const canvas = document.createElement('canvas')
+        const ctx = canvas.getContext('2d')
+        const {width,height} = previewContentStyle
+        ctx.drawImage(this.video,0,0,width,height)
+        const data = canvas.toDataURL('image/png')
+        this.setState({
+            currentImg: {
+                src: data
+            },
+            scale: defaultScale,
+            loading: false,
+            loadingImgReady: true
+        })
     }
     onSelectFile = () => {
         this.file.click()
@@ -232,10 +246,10 @@ class ReactMemeGenerator extends PureComponent {
             if (!isImage(type)) {
                 return message.error('无效的图片格式')
             }
-            if (~~(size / 1024) >= IMG_MAX_SIZE) {
-                let maxSize = IMG_MAX_SIZE > 1024 ? `${IMG_MAX_SIZE}MB` : `${IMG_MAX_SIZE}KB`
-                return message.warning(`图片最大 ${maxSize}!`)
-            }
+            // if (~~(size / 1024) >= IMG_MAX_SIZE) {
+            //     let maxSize = IMG_MAX_SIZE > 1024 ? `${IMG_MAX_SIZE}MB` : `${IMG_MAX_SIZE}KB`
+            //     return message.warning(`图片最大 ${maxSize}!`)
+            // }
             this.setState({ loading: true })
             const url = window.URL.createObjectURL(file)
             this.setState({
@@ -490,8 +504,8 @@ class ReactMemeGenerator extends PureComponent {
 
                             <Row>
                                 <input type="file" className="hidden" accept="image/*" ref={node => this.file = node} onChange={this.imageChange} />
-                                <Col span={4}><Button type="primary" loading={loading} onClick={this.onSelectFile}>{loading ? "请稍后" : "选择图片"}</Button></Col>
-                                <Col span={4} offset={2}><Button type="primary" onClick={this.openCamera}>使用摄像头</Button></Col>
+                                <Col span={6}><Button icon="folder-add" type="primary" loading={loading} onClick={this.onSelectFile}>{loading ? "请稍后" : "选择图片"}</Button></Col>
+                                <Col span={6} offset={3}><Button icon="video-camera" type="primary" onClick={this.openCamera}>使用摄像头</Button></Col>
                             </Row>
                         </Col>
                         <Col span="16">
@@ -575,7 +589,7 @@ class ReactMemeGenerator extends PureComponent {
                             }
                             {
                                 operationRow({
-                                    icon: "line-chart",
+                                    icon: "file-word",
                                     label: '文字大小',
                                     component: (
                                         <Slider
@@ -591,7 +605,7 @@ class ReactMemeGenerator extends PureComponent {
                             }
                             {
                                 operationRow({
-                                    icon: "line-chart",
+                                    icon: "picture",
                                     label: '图像旋转',
                                     component: (
                                         <Slider
@@ -606,7 +620,16 @@ class ReactMemeGenerator extends PureComponent {
                                 })
                             }
                             <Row>
-                                <Col span={3}><Button loading={drawLoading} type="primary" style={{ "width": "100%" }} onClick={this.drawMeme}>生成表情包</Button></Col>
+                                <Col span={24}>
+                                    <Button 
+                                        icon="star-o" 
+                                        loading={drawLoading} 
+                                        type="primary" 
+                                        onClick={this.drawMeme}
+                                    >
+                                      { drawLoading ? "稍等片刻..." : "生成表情包" }
+                                    </Button>
+                                </Col>
                             </Row>
                         </Col>
                     </Row>
@@ -616,13 +639,18 @@ class ReactMemeGenerator extends PureComponent {
                 <Modal
                     maskClosable={false}
                     visible={cameraVisible}
-                    title="摄像头当素材"
-                    okText="使用当前画面"
+                    title="小伙子有点帅哦"
+                    okText="拍照"
                     cancelText="算了太丑了"
                     onCancel={this.closeCamera}
                     onOk={this.screenShotCamera}
                 >
-                    <video src={cameraUrl}></video>
+                    <video 
+                        ref={ video => this.video = video} 
+                        src={cameraUrl}
+                        width={previewContentStyle.width}
+                        height={previewContentStyle.height}
+                    />
                 </Modal>
 
                 <Modal
@@ -642,6 +670,7 @@ class ReactMemeGenerator extends PureComponent {
     componentWillUnmount() {
         const { drag, paste } = this.props
         paste && this.unBindPasteListener(document.body)
+        this.video = null
     }
     componentDidMount() {
         const { drag, paste } = this.props

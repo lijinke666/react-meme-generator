@@ -1,74 +1,73 @@
 @import "./vars.less";
 @import "./mixins.less";
-
-.react-meme{
-    &-item{
-        padding-bottom: 2%;
-        &-label{
-        }
-        &-input{
-
-        }
+.react-meme {
+    &-item {
+        padding-bottom: 3%;
     }
-    .color-section{
+    &-main{
+        padding: 10px 0 80px 0;
+    }
+    .color-section {
         padding: 5px;
         background: #fff;
         border-radius: 1px;
-        box-shadow: 0 0 0 1px rgba(0,0,0,.1);
+        box-shadow: 0 0 0 1px rgba(0, 0, 0, .1);
         display: inline-block;
         cursor: pointer;
-        .color{
+        .color {
             width: 90px;
-            height:22px;
+            height: 22px;
             border-radius: 2px;
         }
     }
-    .popover{
+    .popover {
         position: absolute;
-        left:0;
-        top:41px;
+        left: 0;
+        top: 41px;
         z-index: 999;
         text-align: right;
     }
-    .cover{
+    .cover {
         position: fixed;
-        top:0;
-        left:0;
-        right:0;
-        bottom:0;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
     }
-    .preview-content{
-        width:300px;
-        height:300px;
-        border:1px solid @border-color;
+    .preview-content {
+        width: 300px;
+        height: 300px;
+        border: 1px solid @border-color;
         overflow: hidden;
-        margin-bottom:20px;
+        margin-bottom: 20px;
         position: relative;
-        transform: translate3d(0,0,0);
+        transform: translate3d(0, 0, 0);
         transition: .3s cubic-bezier(0.075, 0.82, 0.165, 1);
-        &:hover{
+        &:hover {
             box-shadow: @shadow;
             border-color: rgba(0, 0, 0, 0.09);
         }
-        &.drag-active{
-            border:2px dashed @border-color;
-            background-color: rgba(0,0,0,.1)
+        &.drag-active {
+            border: 2px dashed @border-color;
+            background-color: rgba(0, 0, 0, .1)
         }
-        .preview-image{
+        .preview-image {
             user-select: none;
             cursor: -webkit-grab;
+            -webkit-user-drag: none;
         }
     }
-    &-text{
+    &-text {
         position: absolute;
-        left:0;
-        top:0;
+        left: 0;
+        top: 0;
         cursor: move;
         z-index: 99;
-        margin:0;
-        padding:0
+        margin: 0;
+        padding: 0
     }
 }
-.react-meme-resize-btn{
-    margin-left:10px;
-    }
+
+.react-meme-resize-btn {
+    margin-left: 10px;
+}
