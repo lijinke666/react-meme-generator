@@ -11,12 +11,12 @@ Have Fun :)
 
 ## Feature List
 
-. [x] √ Batch date
-. [x] √ Picture size control
-. [x] √ Support drag and paste selection images
-. [x] √ Pricture compress
-. [x] √ Pricture rotate
-. []  Camera capture
+- √ Batch date
+- √ Picture size control
+- √ Support drag and paste selection images
+- √ Pricture compress
+- √ Pricture rotate
+- x Camera capture
 
 ## Development
 ```
