@@ -105,6 +105,7 @@ class ReactMemeGenerator extends PureComponent {
                         <img src={dataUrl} style={{ "maxWidth": "100%" }} />
                     ),
                     onOk: () => {
+                        message.success('下载成功!')
                         var link = document.createElement('a');
                         link.download = `${Date.now()}.png`
                         link.href = dataUrl
