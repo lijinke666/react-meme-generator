@@ -49,7 +49,7 @@ export const imageProcess = [
     }
 ]
 
-export const fontSize = Array.from({ length: 60 }).map((_, i) => i + 1).filter(v => v > 15)
+export const fontSize = Array.from({ length: 100 }).map((_, i) => i + 1).filter(v => v >= 12)
 
 //默认 20 px
 export const defaultFontSize = fontSize[4]
@@ -75,6 +75,8 @@ export const textWhellScaleRange = [fontSize[0],fontSize[fontSize.length-1]]
 //图片默认缩放比例
 export const defaultScale = 1.0
 export const defaultRotate = 0
+
+export const defaultQuality = 0.50
 
 //图片预览区域宽高
 export const previewContentStyle = {

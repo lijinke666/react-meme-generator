@@ -41,6 +41,7 @@
         overflow: hidden;
         margin-bottom: 20px;
         position: relative;
+        z-index: 99;
         transform: translate3d(0, 0, 0);
         transition: .3s cubic-bezier(0.075, 0.82, 0.165, 1);
         &:hover {
@@ -55,6 +56,9 @@
             user-select: none;
             cursor: -webkit-grab;
             -webkit-user-drag: none;
+            img{
+                transition: transform 100ms cubic-bezier(0.25, 0.46, 0.33, 0.98)
+            }
         }
     }
     &-text {

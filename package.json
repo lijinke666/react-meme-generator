@@ -1,6 +1,6 @@
 {
   "name": "react-meme-generator",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "description": "a meme generator for react",
   "main": "lib/index.js",
   "scripts": {
@@ -30,15 +30,12 @@
     "emoji",
     "component",
     "generator",
-    "react-meme-generator",
-    "electron"
+    "react-meme-generator"
   ],
   "dependencies": {
-    "antd": "^3.0.3",
+    "antd": "^3.5.1",
     "classnames": "^2.2.5",
     "dom-to-image": "^2.6.0",
-    "electron": "^2.0.0",
-    "electron-packager": "^12.0.2",
     "prop-types": "^15.6.0",
     "react": "^16.2.0",
     "react-color": "^2.13.8",
