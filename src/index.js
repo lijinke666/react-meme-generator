@@ -1,7 +1,6 @@
 /**
  * @name react 表情包 制作器
  * @author jinke.li
- * TODO: 完成 摄像头捕捉
  */
 import React, { PureComponent, Fragment } from "react";
 import Container from "./components/Container";
@@ -221,21 +220,27 @@ class ReactMemeGenerator extends PureComponent {
         })
         .then(stream => {
           const cameraUrl = window.URL.createObjectURL(stream);
+          const hide = message.loading('盛世美颜即将出现...')
           this.setState(
             {
               cameraUrl,
               cameraVisible: true
             },
             () => {
-              try {
-                this.video.play();
-              } catch (err) {
-                console.log(err);
-                Modal.error({
-                  title: "摄像头失败",
-                  content: err.message
-                });
-              }
+              setTimeout(()=>{
+                try {
+                  this.video.play();
+                } catch (err) {
+                  console.log(err);
+                  Modal.error({
+                    title: "摄像头失败",
+                    content: err.message
+                  });
+                } finally{
+                  hide()
+                }
+              },1000)
+              
             }
           );
         })
@@ -254,22 +259,25 @@ class ReactMemeGenerator extends PureComponent {
     // this.setState({ cameraVisible: true })
   };
   closeCamera = () => {
-    this.setState({ cameraVisible: false });
+    this.setState({ cameraVisible: false, cameraUrl:"" });
   };
   fontSizeChange = value => {
     this.setState({ fontSize: value });
   };
-  //TODO:截取当前摄像头 帧
   screenShotCamera = () => {
     const canvas = document.createElement("canvas");
     const ctx = canvas.getContext("2d");
     const { width, height } = previewContentStyle;
+    canvas.width = width;
+    canvas.height = height;
     ctx.drawImage(this.video, 0, 0, width, height);
     const data = canvas.toDataURL("image/png");
+    message.success('截取摄像头画面成功！')
     this.setState({
       currentImg: {
         src: data
       },
+      cameraVisible:false,
       scale: defaultScale,
       loading: false,
       loadingImgReady: true
@@ -879,6 +887,10 @@ class ReactMemeGenerator extends PureComponent {
           onOk={this.screenShotCamera}
         >
           <video
+            style={{
+              display:"block",
+              margin:"0 auto"
+            }}
             ref={video => (this.video = video)}
             src={cameraUrl}
             width={previewContentStyle.width}

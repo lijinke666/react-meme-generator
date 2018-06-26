@@ -1,5 +1,5 @@
 # react-meme-generator
-:joy: a meme generator for react
+:joy: a meme generator for react, suport camera !
 
 Have Fun :)
 
@@ -16,7 +16,7 @@ Have Fun :)
 - [x] Support drag and paste selection images
 - [x] Pricture compress
 - [x] Pricture rotate
-- [ ] Camera capture
+- [x] Camera capture
 
 ## Development
 ```
