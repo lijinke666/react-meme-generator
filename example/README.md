@@ -1,5 +1,5 @@
-# react-meme
-a example
+# react-meme-generator
+run example
 
 ```
 $ npm run demo :)
