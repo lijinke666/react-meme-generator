@@ -1,5 +1,5 @@
 # react-meme-generator
-:joy: a meme generator for react, suport camera !
+:joy: a meme generator for react, support camera !
 
 Have Fun :)
 
