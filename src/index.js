@@ -219,16 +219,15 @@ class ReactMemeGenerator extends PureComponent {
           audio: true
         })
         .then(stream => {
-          const cameraUrl = window.URL.createObjectURL(stream);
           const hide = message.loading('盛世美颜即将出现...')
           this.setState(
             {
-              cameraUrl,
               cameraVisible: true
             },
             () => {
               setTimeout(()=>{
                 try {
+                  this.video.srcObject = stream
                   this.video.play();
                 } catch (err) {
                   console.log(err);
